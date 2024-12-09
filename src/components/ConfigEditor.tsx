@@ -9,61 +9,80 @@ export function ConfigEditor(props: Props) {
   const { onOptionsChange, options } = props;
   const { jsonData, secureJsonFields, secureJsonData } = options;
 
-  const onPathChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onOpsApiUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
     onOptionsChange({
       ...options,
       jsonData: {
         ...jsonData,
-        path: event.target.value,
+        opsAPIURL: event.target.value,
+      },
+    });
+  };
+
+  const onUsernameChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onOptionsChange({
+      ...options,
+      jsonData: {
+        ...jsonData,
+        username: event.target.value,
       },
     });
   };
 
   // Secure field (only sent to the backend)
-  const onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onPasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
     onOptionsChange({
       ...options,
       secureJsonData: {
-        apiKey: event.target.value,
+        password: event.target.value,
       },
     });
   };
 
-  const onResetAPIKey = () => {
+  const onResetPassword = () => {
     onOptionsChange({
       ...options,
       secureJsonFields: {
         ...options.secureJsonFields,
-        apiKey: false,
+        password: false,
       },
       secureJsonData: {
         ...options.secureJsonData,
-        apiKey: '',
+        password: '',
       },
     });
   };
 
   return (
     <>
-      <InlineField label="Path" labelWidth={14} interactive tooltip={'Json field returned to frontend'}>
+      <InlineField label="Operations API URL" labelWidth={20} interactive tooltip={'URL for HarperDB operations API'}>
         <Input
-          id="config-editor-path"
-          onChange={onPathChange}
-          value={jsonData.path}
-          placeholder="Enter the path, e.g. /api/v1"
+          id="config-editor-ops-api-url"
+          onChange={onOpsApiUrlChange}
+          value={jsonData.opsAPIURL}
+          placeholder="Enter the operations API URL for the HarperDB server, e.g. http://localhost:9925/"
+          width={80}
+        />
+      </InlineField>
+      <InlineField label="Username" labelWidth={20} interactive tooltip={'HarperDB username'}>
+        <Input
+          id="config-editor-username"
+          onChange={onUsernameChange}
+          value={jsonData.username}
+          placeholder="Enter your HarperDB username"
           width={40}
         />
       </InlineField>
-      <InlineField label="API Key" labelWidth={14} interactive tooltip={'Secure json field (backend only)'}>
+      <InlineField label="Password" labelWidth={20} interactive tooltip={'HarperDB password'}>
         <SecretInput
           required
-          id="config-editor-api-key"
-          isConfigured={secureJsonFields.apiKey}
-          value={secureJsonData?.apiKey}
-          placeholder="Enter your API key"
+          id="config-editor-password"
+          isConfigured={secureJsonFields.password}
+          value={secureJsonData?.password}
+          placeholder="Enter your HarperDB password"
           width={40}
-          onReset={onResetAPIKey}
-          onChange={onAPIKeyChange}
+          onReset={onResetPassword}
+          onChange={onPasswordChange}
         />
       </InlineField>
     </>

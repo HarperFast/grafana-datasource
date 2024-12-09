@@ -1,4 +1,4 @@
-module github.com/harper-db/harperdb-datasource
+module github.com/HarperDB/grafana-datasource
 
 go 1.22
 
