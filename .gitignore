@@ -37,3 +37,8 @@ ci/
 .idea
 
 .eslintcache
+
+# HarperDB data
+hdb/*
+!hdb/.gitkeep
+

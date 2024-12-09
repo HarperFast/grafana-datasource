@@ -1,15 +1,16 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
-  "name": "Harperdb-Datasource",
-  "id": "harperdb-harperdb-datasource",
+  "name": "HarperDB Datasource",
+  "id": "harperdb-datasource",
   "metrics": true,
   "backend": true,
+  "alerting": true,
   "executable": "gpx_harperdb_datasource",
   "info": {
     "description": "",
     "author": {
-      "name": "Harper db"
+      "name": "HarperDB"
     },
     "keywords": ["datasource"],
     "logos": {

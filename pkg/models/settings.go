@@ -8,12 +8,13 @@ import (
 )
 
 type PluginSettings struct {
-	Path    string                `json:"path"`
-	Secrets *SecretPluginSettings `json:"-"`
+	OpsAPIURL string                `json:"opsAPIURL"`
+	Username  string                `json:"username"`
+	Secrets   *SecretPluginSettings `json:"-"`
 }
 
 type SecretPluginSettings struct {
-	ApiKey string `json:"apiKey"`
+	Password string `json:"password"`
 }
 
 func LoadPluginSettings(source backend.DataSourceInstanceSettings) (*PluginSettings, error) {
@@ -30,6 +31,6 @@ func LoadPluginSettings(source backend.DataSourceInstanceSettings) (*PluginSetti
 
 func loadSecretPluginSettings(source map[string]string) *SecretPluginSettings {
 	return &SecretPluginSettings{
-		ApiKey: source["apiKey"],
+		Password: source["password"],
 	}
 }
