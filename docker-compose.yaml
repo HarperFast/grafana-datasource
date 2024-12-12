@@ -38,6 +38,8 @@ services:
       - ./hdb:/home/harperdb/hdb
     networks:
       - grafana-harperdb
+    ports:
+      - '49925:9925'
     environment:
       HDB_ADMIN_USERNAME: admin
       HDB_ADMIN_PASSWORD: foobarbaz
