@@ -1,13 +1,23 @@
 import { DataSourceJsonData } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 
+type SysInfoQueryAttrs = {
+	attributes?: string[]; // TODO: Maybe restrict this to the supported set?
+};
+
+type SearchByConditionsQueryAttrs = {
+	// TODO
+};
+
+export type QueryAttrs = SysInfoQueryAttrs & SearchByConditionsQueryAttrs;
+
 export interface MyQuery extends DataQuery {
-	queryText?: string;
-	constant: number;
+	operation?: string;
+	queryAttrs?: QueryAttrs;
 }
 
 export const DEFAULT_QUERY: Partial<MyQuery> = {
-	constant: 6.5,
+	operation: 'system_information',
 };
 
 export interface DataPoint {

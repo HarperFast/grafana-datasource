@@ -1,20 +1,20 @@
 package plugin
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
-	"net/http"
-	"net/url"
-	"strconv"
-	"time"
-
 	"github.com/HarperDB/grafana-datasource/pkg/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"net/http"
+	"net/url"
+	"strconv"
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -67,7 +67,7 @@ type Datasource struct {
 // created. As soon as datasource settings change detected by SDK old datasource instance will
 // be disposed and a new one will be created using NewSampleDatasource factory function.
 func (d *Datasource) Dispose() {
-	// Clean up datasource instance resources.
+	d.httpClient.CloseIdleConnections()
 }
 
 // QueryData handles multiple queries and returns multiple responses.
@@ -75,49 +75,139 @@ func (d *Datasource) Dispose() {
 // The QueryDataResponse contains a map of RefID to the response for each query, and each response
 // contains Frames ([]*Frame).
 func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+	log.DefaultLogger.Info("QueryData", "request", req)
+
 	// create response struct
 	response := backend.NewQueryDataResponse()
 
 	// loop over queries and execute them individually.
 	for _, q := range req.Queries {
-		res := d.query(ctx, req.PluginContext, q)
-
-		// save the response in a hashmap
-		// based on with RefID as identifier
-		response.Responses[q.RefID] = res
+		res, err := d.query(ctx, req.PluginContext, q)
+		if err != nil {
+			response.Responses[q.RefID] = backend.ErrDataResponse(backend.StatusBadRequest, err.Error())
+		} else {
+			response.Responses[q.RefID] = res
+		}
 	}
 
 	return response, nil
 }
 
-type queryModel struct{}
+type queryModel struct {
+	Operation  string              `json:"operation"`
+	QueryAttrs map[string][]string `json:"queryAttrs"`
+}
 
-func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
+type harperDBRequest map[string]any
+
+type sysInfoResponse struct {
+	System map[string]json.RawMessage `json:"system"`
+}
+
+type searchByConditionsResponse struct {
+	// TODO: Figure out how to unmarshal responses into this when appropriate
+}
+
+type harperDBResponse map[string]json.RawMessage
+
+func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) (backend.DataResponse, error) {
+	// TODO: Refactor this into multiple functions / files / packages
+	harperURL := d.settings.OpsAPIURL
+	username := d.settings.Username
+
+	instanceSettings := pCtx.DataSourceInstanceSettings
+	password, exists := instanceSettings.DecryptedSecureJSONData["password"]
+
+	if !exists {
+		return backend.DataResponse{}, fmt.Errorf("no password found for HarperDB connection '%s'", pCtx.PluginID)
+	}
+
 	var response backend.DataResponse
 
-	// Unmarshal the JSON into our queryModel.
 	var qm queryModel
 
 	err := json.Unmarshal(query.JSON, &qm)
 	if err != nil {
-		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
+		return backend.DataResponse{}, fmt.Errorf("could not unmarshal Grafana query JSON: '%s': '%w'", query.JSON, err)
+	}
+
+	reqData := make(harperDBRequest)
+	reqData["operation"] = qm.Operation
+	for k, v := range qm.QueryAttrs {
+		reqData[k] = v
+	}
+	reqBody, err := json.Marshal(reqData)
+	if err != nil {
+		return backend.DataResponse{}, fmt.Errorf("could not marshal HarperDB request JSON: '%+v': '%w'", reqData, err)
+	}
+
+	log.DefaultLogger.Debug("HarperDB request", "body", string(reqBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, harperURL, bytes.NewReader(reqBody))
+	if err != nil {
+		return backend.DataResponse{}, fmt.Errorf("could not create HTTP request: '%s': '%w'", harperURL, err)
+	}
+
+	req.SetBasicAuth(username, password)
+
+	req.Header.Add("Content-Type", "application/json")
+
+	httpResp, err := d.httpClient.Do(req)
+	switch {
+	case err == nil:
+		break
+	case errors.Is(err, context.DeadlineExceeded):
+		return backend.DataResponse{}, err
+	default:
+		return backend.DataResponse{}, fmt.Errorf("could not execute HTTP request: '%s': '%w'", req.URL, err)
+	}
+	defer func() {
+		if err := httpResp.Body.Close(); err != nil {
+			log.DefaultLogger.Error("query: failed to close response body", "error", err)
+		}
+	}()
+
+	if httpResp.StatusCode != http.StatusOK {
+		return backend.DataResponse{}, fmt.Errorf("expected 200 response, got %d", httpResp.StatusCode)
+	}
+
+	// TODO: Unmarshalling to map[string]any here is just for debugging in dev; remove this later
+	//var body map[string]any
+	//if err := json.NewDecoder(httpResp.Body).Decode(&body); err != nil {
+	//	return backend.DataResponse{}, fmt.Errorf("could not decode response body: %w", err)
+	//}
+	//log.DefaultLogger.Debug("Query", "response", body)
+
+	// TODO: Stop hard-coding this type and figure out how to do this dynamically based on operation
+	//var results sysInfoResponse
+	//if err := json.NewDecoder(httpResp.Body).Decode(&results); err != nil {
+	//	return backend.DataResponse{}, fmt.Errorf("could not decode response body: %w", err)
+	//}
+
+	var results harperDBResponse
+	if err := json.NewDecoder(httpResp.Body).Decode(&results); err != nil {
+		return backend.DataResponse{}, fmt.Errorf("could not decode response body: %w", err)
 	}
 
 	// create data frame response.
 	// For an overview on data frames and how grafana handles them:
 	// https://grafana.com/developers/plugin-tools/introduction/data-frames
 	frame := data.NewFrame("response")
+	frame.RefID = query.RefID
 
-	// add fields.
-	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, query.TimeRange.To}),
-		data.NewField("values", nil, []int64{10, 20}),
-	)
+	//frame.Fields = append(frame.Fields, data.NewField("system", nil, results.System))
+
+	for resultKey, resultVal := range results {
+		resultVals := make([]json.RawMessage, 1)
+		resultVals[0] = resultVal
+		frame.Fields = append(frame.Fields,
+			data.NewField(resultKey, nil, resultVals),
+		)
+	}
 
 	// add the frames to the response.
 	response.Frames = append(response.Frames, frame)
 
-	return response
+	return response, nil
 }
 
 // CheckHealth handles health checks sent from Grafana to the plugin.
