@@ -6,6 +6,8 @@ toolchain go1.23.4
 
 require github.com/grafana/grafana-plugin-sdk-go v0.260.3
 
+replace github.com/HarperDB-Add-Ons/sdk-go => /Users/wes/dev/sdk-go
+
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/HarperDB-Add-Ons/sdk-go v0.0.0-20250109224813-a769b9000cb3 // indirect
