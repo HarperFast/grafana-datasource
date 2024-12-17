@@ -11,6 +11,7 @@ type OpQueryProps = {
 	onQueryAttrsChange: (attrs: QueryAttrs) => void;
 };
 
+// TODO: Consider pulling these from a backend resource handler instead of duplicating here
 const sysInfoAttrs = [
 	'system',
 	'time',
@@ -20,6 +21,8 @@ const sysInfoAttrs = [
 	'network',
 	'harperdb_processes',
 	'table_size',
+	'metrics',
+	'threads',
 	'replication',
 ];
 

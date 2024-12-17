@@ -1,20 +1,16 @@
 package plugin
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	harperdb "github.com/HarperDB-Add-Ons/sdk-go"
 	"github.com/HarperDB/grafana-datasource/pkg/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
-	"net/http"
-	"net/url"
-	"strconv"
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -33,42 +29,37 @@ type Settings struct {
 	Username  string `json:"username"`
 }
 
-func NewDatasource(ctx context.Context, s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func NewDatasource(_ context.Context, s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	var settings Settings
 	err := json.Unmarshal(s.JSONData, &settings)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling settings from JSON: %w", err)
 	}
 
-	opts, err := s.HTTPClientOptions(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error getting http client options: %w", err)
+	password, exists := s.DecryptedSecureJSONData["password"]
+	if !exists {
+		return backend.DataResponse{}, fmt.Errorf("no password found for HarperDB connection")
 	}
 
-	client, err := httpclient.New(opts)
-	if err != nil {
-		return nil, fmt.Errorf("error creating http client: %w", err)
-	}
+	client := harperdb.NewClient(settings.OpsAPIURL, settings.Username, password)
 
 	return &Datasource{
-		settings:   settings,
-		httpClient: client,
+		settings:  settings,
+		hdbClient: client,
 	}, nil
 }
 
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
 type Datasource struct {
-	settings   Settings
-	httpClient *http.Client
+	settings  Settings
+	hdbClient *harperdb.Client
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
 // created. As soon as datasource settings change detected by SDK old datasource instance will
 // be disposed and a new one will be created using NewSampleDatasource factory function.
-func (d *Datasource) Dispose() {
-	d.httpClient.CloseIdleConnections()
-}
+func (d *Datasource) Dispose() {}
 
 // QueryData handles multiple queries and returns multiple responses.
 // req contains the queries []DataQuery (where each query contains RefID as a unique identifier).
@@ -111,17 +102,6 @@ type searchByConditionsResponse struct {
 type harperDBResponse map[string]json.RawMessage
 
 func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) (backend.DataResponse, error) {
-	// TODO: Refactor this into multiple functions / files / packages
-	harperURL := d.settings.OpsAPIURL
-	username := d.settings.Username
-
-	instanceSettings := pCtx.DataSourceInstanceSettings
-	password, exists := instanceSettings.DecryptedSecureJSONData["password"]
-
-	if !exists {
-		return backend.DataResponse{}, fmt.Errorf("no password found for HarperDB connection '%s'", pCtx.PluginID)
-	}
-
 	var response backend.DataResponse
 
 	var qm queryModel
@@ -131,77 +111,36 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		return backend.DataResponse{}, fmt.Errorf("could not unmarshal Grafana query JSON: '%s': '%w'", query.JSON, err)
 	}
 
-	reqData := make(harperDBRequest)
-	reqData["operation"] = qm.Operation
-	for k, v := range qm.QueryAttrs {
-		reqData[k] = v
-	}
-	reqBody, err := json.Marshal(reqData)
-	if err != nil {
-		return backend.DataResponse{}, fmt.Errorf("could not marshal HarperDB request JSON: '%+v': '%w'", reqData, err)
-	}
-
-	log.DefaultLogger.Debug("HarperDB request", "body", string(reqBody))
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, harperURL, bytes.NewReader(reqBody))
-	if err != nil {
-		return backend.DataResponse{}, fmt.Errorf("could not create HTTP request: '%s': '%w'", harperURL, err)
-	}
-
-	req.SetBasicAuth(username, password)
-
-	req.Header.Add("Content-Type", "application/json")
-
-	httpResp, err := d.httpClient.Do(req)
-	switch {
-	case err == nil:
-		break
-	case errors.Is(err, context.DeadlineExceeded):
-		return backend.DataResponse{}, err
-	default:
-		return backend.DataResponse{}, fmt.Errorf("could not execute HTTP request: '%s': '%w'", req.URL, err)
-	}
-	defer func() {
-		if err := httpResp.Body.Close(); err != nil {
-			log.DefaultLogger.Error("query: failed to close response body", "error", err)
-		}
-	}()
-
-	if httpResp.StatusCode != http.StatusOK {
-		return backend.DataResponse{}, fmt.Errorf("expected 200 response, got %d", httpResp.StatusCode)
-	}
-
-	// TODO: Unmarshalling to map[string]any here is just for debugging in dev; remove this later
-	//var body map[string]any
-	//if err := json.NewDecoder(httpResp.Body).Decode(&body); err != nil {
-	//	return backend.DataResponse{}, fmt.Errorf("could not decode response body: %w", err)
-	//}
-	//log.DefaultLogger.Debug("Query", "response", body)
-
-	// TODO: Stop hard-coding this type and figure out how to do this dynamically based on operation
-	//var results sysInfoResponse
-	//if err := json.NewDecoder(httpResp.Body).Decode(&results); err != nil {
-	//	return backend.DataResponse{}, fmt.Errorf("could not decode response body: %w", err)
-	//}
-
-	var results harperDBResponse
-	if err := json.NewDecoder(httpResp.Body).Decode(&results); err != nil {
-		return backend.DataResponse{}, fmt.Errorf("could not decode response body: %w", err)
-	}
-
 	// create data frame response.
 	// For an overview on data frames and how grafana handles them:
 	// https://grafana.com/developers/plugin-tools/introduction/data-frames
 	frame := data.NewFrame("response")
 	frame.RefID = query.RefID
 
-	//frame.Fields = append(frame.Fields, data.NewField("system", nil, results.System))
+	switch qm.Operation {
+	case "system_information":
+		sysInfoAttrs := qm.QueryAttrs["attributes"]
+		var sysInfo *harperdb.SysInfo
+		if len(sysInfoAttrs) > 0 {
+			sysInfo, err = d.hdbClient.SystemInformation(sysInfoAttrs)
+		} else {
+			sysInfo, err = d.hdbClient.SystemInformationAll()
+		}
+		if err != nil {
+			return backend.DataResponse{}, fmt.Errorf("could not get HarperDB system information: %w", err)
+		}
+		log.DefaultLogger.Debug("HarperDB system information", "sysInfo", sysInfo)
 
-	for resultKey, resultVal := range results {
-		resultVals := make([]json.RawMessage, 1)
-		resultVals[0] = resultVal
-		frame.Fields = append(frame.Fields,
-			data.NewField(resultKey, nil, resultVals),
-		)
+		frame.Fields = append(frame.Fields, models.SysInfoToFields(sysInfo, sysInfoAttrs)...)
+
+		// TODO: Don't know if we need to do this, but it blows up on the duplicate field names
+		//frame, err = data.LongToWide(frame, &data.FillMissing{
+		//	Mode:  data.FillModePrevious,
+		//	Value: 0,
+		//})
+		//if err != nil {
+		//	return backend.DataResponse{}, fmt.Errorf("could not transform HarperDB system information response to wide format: %w", err)
+		//}
 	}
 
 	// add the frames to the response.
@@ -214,65 +153,19 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 // The main use case for these health checks is the test button on the
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
-func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
-	config, err := models.LoadPluginSettings(*req.PluginContext.DataSourceInstanceSettings)
 
+	err := d.hdbClient.Healthcheck()
 	if err != nil {
 		res.Status = backend.HealthStatusError
-		res.Message = "Unable to load settings"
-		return res, nil
-	}
-
-	if config.OpsAPIURL == "" {
-		res.Status = backend.HealthStatusError
-		res.Message = "Operations API URL is empty"
-		return res, nil
-	}
-
-	if config.Username == "" {
-		res.Status = backend.HealthStatusError
-		res.Message = "Username is empty"
-		return res, nil
-	}
-
-	if config.Secrets.Password == "" {
-		res.Status = backend.HealthStatusError
-		res.Message = "Password is missing"
-		return res, nil
-	}
-
-	opsAPIURL, err := url.Parse(config.OpsAPIURL)
-	if err != nil {
-		res.Status = backend.HealthStatusError
-		res.Message = "Invalid OpsAPI URL"
-		return res, nil
-	}
-
-	healthCheckURL := opsAPIURL.JoinPath("/health")
-	log.DefaultLogger.Info("Health check", "url", healthCheckURL)
-	healthReq, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), nil)
-	if err != nil {
-		res.Status = backend.HealthStatusError
-		res.Message = "Could not create health check request: " + err.Error()
-		return res, nil
-	}
-
-	healthResp, err := d.httpClient.Do(healthReq)
-	if err != nil {
-		res.Status = backend.HealthStatusError
-		res.Message = "Could not execute health check request: " + err.Error()
-		return res, nil
-	}
-	defer func() {
-		if err := healthResp.Body.Close(); err != nil {
-			log.DefaultLogger.Error("could not close health check response body", "error", err)
+		var opErr *harperdb.OperationError
+		if errors.As(err, &opErr) {
+			res.Message = fmt.Sprintf("Health check returned unexpected status code: '%d' with message: '%s'",
+				opErr.StatusCode, opErr.Message)
+		} else {
+			res.Message = "Health check returned unexpected error: " + err.Error()
 		}
-	}()
-
-	if healthResp.StatusCode != http.StatusOK {
-		res.Status = backend.HealthStatusError
-		res.Message = "Health check returned unexpected status code: " + strconv.Itoa(healthResp.StatusCode)
 		return res, nil
 	}
 
