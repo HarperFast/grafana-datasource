@@ -24,5 +24,5 @@ test('"Save & test" should fail when configuration is invalid', async ({
   await page.getByRole('textbox', { name: 'Operations API URL' }).fill(ds.jsonData.opsAPIURL ?? '');
   await page.getByRole('textbox', { name: 'Username' }).fill(ds.jsonData.username ?? '');
   await expect(configPage.saveAndTest()).not.toBeOK();
-  await expect(configPage).toHaveAlert('error', { hasText: 'Password is missing' });
+  await expect(configPage).toHaveAlert('error', { hasText: 'no password found for HarperDB connection' });
 });
