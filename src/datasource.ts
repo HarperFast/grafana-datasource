@@ -1,5 +1,5 @@
 import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
-import { DataSourceWithBackend } from '@grafana/runtime';
+import {DataSourceWithBackend, getTemplateSrv} from '@grafana/runtime';
 
 import { HDBQuery, HDBDataSourceOptions, DEFAULT_QUERY } from './types';
 
@@ -12,16 +12,30 @@ export class DataSource extends DataSourceWithBackend<HDBQuery, HDBDataSourceOpt
 		return DEFAULT_QUERY;
 	}
 
-	applyTemplateVariables(query: MyQuery, scopedVars: ScopedVars) {
+	applyTemplateVariables(query: HDBQuery, scopedVars: ScopedVars) {
+		const templateSrv = getTemplateSrv();
+		const conditions = query.queryAttrs?.conditions?.map(c => {
+			let searchVal: any = templateSrv.replace(c.search_value, scopedVars);
+			// TODO: This is a quick n' dirty hack for handling numeric search_values.
+			// Figure out how to do this right!
+			const searchValNum = parseInt(searchVal, 10);
+			if (!isNaN(searchValNum)) {
+				searchVal = searchValNum;
+			}
+			return { ...c, search_value: searchVal }
+		});
 		return {
 			...query,
-			// TODO: Figure out what this function does / is for
-			// queryText: getTemplateSrv().replace(query.queryText, scopedVars),
+			queryAttrs: { ...query.queryAttrs, conditions },
 		};
 	}
 
 	filterQuery(query: HDBQuery): boolean {
 		// if no query has been provided, prevent the query from being executed
-		return !!query.queryAttrs;
+		return !!query.queryAttrs &&
+			!!query.queryAttrs.database &&
+			!!query.queryAttrs.table &&
+			!!query.queryAttrs.conditions &&
+			query.queryAttrs.conditions.length > 0;
 	}
 }

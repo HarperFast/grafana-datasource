@@ -5,9 +5,28 @@ type SysInfoQueryAttrs = {
 	attributes?: string[]; // TODO: Maybe restrict this to the supported set?
 };
 
+type Sort = {
+	attribute?: string;
+	descending?: boolean;
+	next?: Sort;
+}
+
+export type Condition = {
+	search_attribute?: string;
+	search_type?: string;
+	search_value?: string;
+	operator?: string;
+	conditions?: Condition[];
+}
+
 type SearchByConditionsQueryAttrs = {
-	// TODO
-};
+	database?: string;
+	table?: string;
+	operator?: string;
+	sort?: Sort;
+	get_attributes?: string[];
+	conditions?: Condition[];
+}
 
 export type QueryAttrs = SysInfoQueryAttrs & SearchByConditionsQueryAttrs;
 
@@ -16,8 +35,8 @@ export interface HDBQuery extends DataQuery {
 	queryAttrs?: QueryAttrs;
 }
 
-	operation: 'system_information',
 export const DEFAULT_QUERY: Partial<HDBQuery> = {
+	operation: 'search_by_conditions',
 };
 
 export interface DataPoint {
