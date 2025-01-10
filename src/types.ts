@@ -11,13 +11,13 @@ type SearchByConditionsQueryAttrs = {
 
 export type QueryAttrs = SysInfoQueryAttrs & SearchByConditionsQueryAttrs;
 
-export interface MyQuery extends DataQuery {
+export interface HDBQuery extends DataQuery {
 	operation?: string;
 	queryAttrs?: QueryAttrs;
 }
 
-export const DEFAULT_QUERY: Partial<MyQuery> = {
 	operation: 'system_information',
+export const DEFAULT_QUERY: Partial<HDBQuery> = {
 };
 
 export interface DataPoint {
@@ -32,7 +32,7 @@ export interface DataSourceResponse {
 /**
  * These are options configured for each DataSource instance
  */
-export interface MyDataSourceOptions extends DataSourceJsonData {
+export interface HDBDataSourceOptions extends DataSourceJsonData {
 	opsAPIURL?: string;
 	username?: string;
 }
@@ -40,6 +40,6 @@ export interface MyDataSourceOptions extends DataSourceJsonData {
 /**
  * Value that is used in the backend, but never sent over HTTP to the frontend
  */
-export interface MySecureJsonData {
+export interface HDBSecureJsonData {
 	password?: string;
 }

@@ -2,12 +2,12 @@ import React from 'react';
 import { InlineField, Input, Stack, Select, Alert, MultiSelect } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { MyDataSourceOptions, MyQuery, QueryAttrs } from '../types';
+import { HDBDataSourceOptions, HDBQuery, QueryAttrs } from '../types';
 
-type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
+type Props = QueryEditorProps<DataSource, HDBQuery, HDBDataSourceOptions>;
 type OpQueryProps = {
 	operation: string;
-	query: MyQuery;
+	query: HDBQuery;
 	onQueryAttrsChange: (attrs: QueryAttrs) => void;
 };
 
