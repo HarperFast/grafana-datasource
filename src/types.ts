@@ -11,10 +11,17 @@ type Sort = {
 	next?: Sort;
 }
 
+export interface SearchValue {
+	val: string | number | number[] | boolean;
+	type: string;
+}
+
 export type Condition = {
+	id: string;
 	search_attribute?: string;
 	search_type?: string;
-	search_value?: string;
+	search_value?: SearchValue;
+	searchValueType?: string;
 	operator?: string;
 	conditions?: Condition[];
 }

@@ -92,10 +92,15 @@ type SortVal struct {
 	Next       *SortVal `json:"next"`
 }
 
+type SearchValue struct {
+	Val  any    `json:"val"`
+	Type string `json:"type"`
+}
+
 type Condition struct {
 	SearchAttribute string       `json:"search_attribute"`
 	SearchType      string       `json:"search_type"`
-	SearchValue     any          `json:"search_value"`
+	SearchValue     SearchValue  `json:"search_value"`
 	Operator        string       `json:"operator"`
 	Conditions      []*Condition `json:"conditions"`
 }
@@ -237,7 +242,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			conditions = append(conditions, harperdb.SearchCondition{
 				Attribute: condition.SearchAttribute,
 				Type:      condition.SearchType,
-				Value:     condition.SearchValue,
+				Value:     condition.SearchValue.Val,
 				Operator:  condition.Operator,
 			})
 		}

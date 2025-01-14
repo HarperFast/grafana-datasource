@@ -1,7 +1,12 @@
 import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
 import {DataSourceWithBackend, getTemplateSrv} from '@grafana/runtime';
 
-import { HDBQuery, HDBDataSourceOptions, DEFAULT_QUERY } from './types';
+import {
+	HDBQuery,
+	HDBDataSourceOptions,
+	DEFAULT_QUERY,
+	SearchValue,
+} from './types';
 
 export class DataSource extends DataSourceWithBackend<HDBQuery, HDBDataSourceOptions> {
 	constructor(instanceSettings: DataSourceInstanceSettings<HDBDataSourceOptions>) {
@@ -12,16 +17,54 @@ export class DataSource extends DataSourceWithBackend<HDBQuery, HDBDataSourceOpt
 		return DEFAULT_QUERY;
 	}
 
+	/**
+	 *  coerceValue takes a raw form fieldVal string and toType string and attempts to coerce
+	 *  fieldVal to toType (or whichever type it looks like if toType === 'auto').
+	 *
+	 *  toType can be any of 'auto', 'boolean', 'string', 'number', 'number_array'
+	 *
+	 *  It returns an instance of SearchValue.
+	 */
+	coerceValue(fieldVal: string, toType: string): SearchValue {
+		const trimmedFieldVal = fieldVal.trim();
+		const canonicalFieldVal = trimmedFieldVal.toLowerCase();
+
+		if (toType === 'auto' || toType === 'boolean') {
+			if (canonicalFieldVal === 'false') {
+				return {val: false, type: 'boolean'};
+			}
+
+			if (canonicalFieldVal === 'true') {
+				return {val: true, type: 'boolean'};
+			}
+		}
+
+		if (toType === 'auto' || toType === 'number') {
+			const numFieldVal = parseFloat(canonicalFieldVal);
+			if (!isNaN(numFieldVal) && numFieldVal.toString() === trimmedFieldVal) {
+				return {val: numFieldVal, type: 'number'};
+			}
+		}
+
+		if (toType === 'auto' || toType === 'number_array') {
+			const elems = canonicalFieldVal.split(/\s*,\s*/);
+			const nums = elems.map((e) => parseFloat(e));
+			if (nums.every((n, i) => {
+				return !isNaN(n) && n.toString() === elems[i]
+			})) {
+				return {val: nums, type: 'number_array'};
+			}
+		}
+
+		return {val: trimmedFieldVal, type: 'string'};
+	};
+
 	applyTemplateVariables(query: HDBQuery, scopedVars: ScopedVars) {
 		const templateSrv = getTemplateSrv();
 		const conditions = query.queryAttrs?.conditions?.map(c => {
-			let searchVal: any = templateSrv.replace(c.search_value, scopedVars);
-			// TODO: This is a quick n' dirty hack for handling numeric search_values.
-			// Figure out how to do this right!
-			const searchValNum = parseInt(searchVal, 10);
-			if (!isNaN(searchValNum)) {
-				searchVal = searchValNum;
-			}
+			const searchFieldVal: any = templateSrv.replace(c.search_value?.val.toString(), scopedVars);
+			const searchValType = c.searchValueType ?? 'auto';
+			const searchVal = this.coerceValue(searchFieldVal, searchValType);
 			return { ...c, search_value: searchVal }
 		});
 		return {
@@ -36,6 +79,11 @@ export class DataSource extends DataSourceWithBackend<HDBQuery, HDBDataSourceOpt
 			!!query.queryAttrs.database &&
 			!!query.queryAttrs.table &&
 			!!query.queryAttrs.conditions &&
-			query.queryAttrs.conditions.length > 0;
+			query.queryAttrs.conditions.length > 0 &&
+			!!query.queryAttrs.conditions[0].search_attribute &&
+			query.queryAttrs.conditions[0].search_attribute.length > 0 &&
+			!!query.queryAttrs.conditions[0].search_type &&
+			query.queryAttrs.conditions[0].search_type.length > 0 &&
+			!!query.queryAttrs.conditions[0].search_value?.val;
 	}
 }

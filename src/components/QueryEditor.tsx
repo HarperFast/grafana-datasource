@@ -1,12 +1,24 @@
 import React, { ChangeEvent } from 'react';
-import { InlineField, Input, Stack, Select, Alert, MultiSelect, Checkbox, Label, Button } from '@grafana/ui';
+import {
+	InlineField,
+	Input,
+	Stack,
+	Select,
+	Alert,
+	MultiSelect,
+	Checkbox,
+	Label,
+	Button,
+	InlineLabel,
+} from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { HDBDataSourceOptions, HDBQuery, QueryAttrs, Condition } from '../types';
+import { Condition, HDBDataSourceOptions, HDBQuery, QueryAttrs } from '../types';
 
 type Props = QueryEditorProps<DataSource, HDBQuery, HDBDataSourceOptions>;
 type OpQueryProps = {
 	operation: string;
+	datasource: DataSource;
 	query: HDBQuery;
 	onQueryAttrsChange: (attrs: QueryAttrs) => void;
 };
@@ -29,7 +41,7 @@ const sysInfoAttrs = [
 function toSelectableValues(vs: string[]): Array<SelectableValue<string>> {
 	return vs.map((v) => ({
 		label: v,
-		value: v,
+		value: v.toLowerCase().replaceAll(/\s+/g, '_'),
 	}));
 }
 
@@ -57,11 +69,13 @@ function SysInfoQueryEditor({ queryAttrs, onQueryAttrsChange }: SysInfoQueryProp
 }
 
 interface SearchByConditionsQueryProps {
+	datasource: DataSource;
 	queryAttrs?: QueryAttrs;
 	onQueryAttrsChange: (attrs: QueryAttrs) => void;
 }
 
 interface ConditionFormProps extends SearchByConditionsQueryProps {
+	datasource: DataSource;
 	index: number;
 }
 
@@ -78,24 +92,29 @@ const searchTypes = [
 	'between',
 ];
 
-function ConditionForm({ queryAttrs, onQueryAttrsChange, index }: ConditionFormProps) {
+function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: ConditionFormProps) {
 	const condition = queryAttrs?.conditions?.[index];
+
+	const searchValueTypes = ['Auto', 'String', 'Number', 'Boolean', 'Number Array'];
+	const searchValueTypesOptions = toSelectableValues(searchValueTypes);
+
 	return (
 		<Stack gap={0} direction="row">
 			<InlineField label="Search attribute">
 				<Input
 					id="search-by-conditions-search-attr"
 					name="search-attr"
+					width={12}
 					required
 					value={condition?.search_attribute}
-					onBlur={(e: ChangeEvent<HTMLInputElement>) => {
+					onChange={(e: ChangeEvent<HTMLInputElement>) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
 						conditions[index] = { ...conditions[index], search_attribute: e.target.value };
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
 				/>
 			</InlineField>
-			<InlineField label="Search type">
+			<InlineField label="Search type" style={{ marginLeft: '16px' }}>
 				<Select
 					id="search-by-conditions-search-type"
 					name="search-type"
@@ -109,29 +128,64 @@ function ConditionForm({ queryAttrs, onQueryAttrsChange, index }: ConditionFormP
 					required
 				/>
 			</InlineField>
-			<InlineField label="Search value">
+			<InlineField label="Search value" style={{ marginLeft: '16px' }}>
 				<Input
 					id="search-by-conditions-search-value"
 					name="search-value"
-					value={condition?.search_value}
-					onBlur={(e: ChangeEvent<HTMLInputElement>) => {
+					width={12}
+					value={condition?.search_value?.val.toString()}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
-						conditions[index] = { ...conditions[index], search_value: e.target.value };
+						const svt = condition?.searchValueType ?? 'auto';
+						const coercedVal = datasource.coerceValue(e.target.value, svt);
+						conditions[index] = {
+							...conditions[index],
+							search_value: coercedVal,
+						};
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
 					required
 				/>
 			</InlineField>
+			<InlineField label="Type">
+				<Select
+					id="search-by-conditions-search-value-type"
+					name="search-value-type"
+					options={searchValueTypesOptions}
+					value={condition?.searchValueType}
+					onChange={(v) => {
+						const conditions = [...(queryAttrs?.conditions || [])];
+						conditions[index] = {
+							...conditions[index],
+							searchValueType: v.value,
+							search_value: datasource.coerceValue(condition?.search_value?.val.toString() ?? '', v.value ?? 'string'),
+						};
+						onQueryAttrsChange({ ...queryAttrs, conditions });
+					}}
+				/>
+			</InlineField>
+			{(condition?.searchValueType === 'auto' || condition?.searchValueType !== condition?.search_value?.type) &&
+			condition?.search_value ? (
+				<InlineLabel width="auto">{condition?.search_value?.type}</InlineLabel>
+			) : null}
 			{/*TODO: Figure out how to support nested conditions here*/}
 		</Stack>
 	);
 }
 
-function SearchByConditionsQueryEditor({ queryAttrs, onQueryAttrsChange }: SearchByConditionsQueryProps) {
+const defaultCondition = { searchValueType: 'auto' };
+
+function newCondition(id: number): Condition {
+	return { ...defaultCondition, id: `condition-${id}` };
+}
+
+function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsChange }: SearchByConditionsQueryProps) {
+	const nextConditionId = React.useRef((queryAttrs?.conditions?.length ?? 0) + 1);
+
 	const onConditionAdd = () => {
 		let conditions = [...(queryAttrs?.conditions || [])];
-		const defaultCondition: Condition = {};
-		onQueryAttrsChange({ ...queryAttrs, conditions: [...conditions, defaultCondition] });
+		const condition = newCondition(nextConditionId.current++);
+		onQueryAttrsChange({ ...queryAttrs, conditions: [...conditions, condition] });
 	};
 
 	const onConditionRemove = (index: number) => {
@@ -140,9 +194,16 @@ function SearchByConditionsQueryEditor({ queryAttrs, onQueryAttrsChange }: Searc
 		onQueryAttrsChange({ ...queryAttrs, conditions });
 	};
 
-	let conditions = queryAttrs?.conditions;
 	// ensure at least one blank condition form shows up
-	conditions ||= [{}];
+	if (queryAttrs === undefined) {
+		onQueryAttrsChange({});
+	}
+	if (queryAttrs) {
+		if (queryAttrs.conditions === undefined) {
+			queryAttrs.conditions = [newCondition(0)];
+		}
+	}
+	let conditions = queryAttrs?.conditions;
 
 	return (
 		<Stack gap={0} direction="column">
@@ -152,7 +213,6 @@ function SearchByConditionsQueryEditor({ queryAttrs, onQueryAttrsChange }: Searc
 					name="database"
 					value={queryAttrs?.database}
 					placeholder="data"
-					defaultValue="data"
 					onChange={(e: ChangeEvent<HTMLInputElement>) =>
 						onQueryAttrsChange({ ...queryAttrs, database: e.target.value })
 					}
@@ -210,10 +270,15 @@ function SearchByConditionsQueryEditor({ queryAttrs, onQueryAttrsChange }: Searc
 				/>
 			</InlineField>
 			<Label style={{ marginTop: '25px' }}>Conditions</Label>
-			{conditions?.map((condition: Condition, index: number) => {
+			{conditions?.map((condition, index) => {
 				return (
-					<div className="gf-form-inline" key={JSON.stringify(condition) + index}>
-						<ConditionForm queryAttrs={queryAttrs} onQueryAttrsChange={onQueryAttrsChange} index={index} />
+					<div className="gf-form-inline" key={condition.id}>
+						<ConditionForm
+							datasource={datasource}
+							queryAttrs={queryAttrs}
+							onQueryAttrsChange={onQueryAttrsChange}
+							index={index}
+						/>
 						{index > 0 ? (
 							<Button
 								className="btn btn-danger btn-small"
@@ -244,7 +309,7 @@ function SearchByConditionsQueryEditor({ queryAttrs, onQueryAttrsChange }: Searc
 								e.preventDefault();
 							}}
 						>
-							Add Condition
+							+
 						</Button>
 					</div>
 				</div>
@@ -253,13 +318,19 @@ function SearchByConditionsQueryEditor({ queryAttrs, onQueryAttrsChange }: Searc
 	);
 }
 
-function OpQueryEditor({ operation, query, onQueryAttrsChange }: OpQueryProps) {
+function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQueryProps) {
 	switch (operation) {
 		// system_information isn't currently used, but leaving here as an example of handling other ops
 		case 'system_information':
 			return <SysInfoQueryEditor queryAttrs={query.queryAttrs} onQueryAttrsChange={onQueryAttrsChange} />;
 		case 'search_by_conditions':
-			return <SearchByConditionsQueryEditor queryAttrs={query.queryAttrs} onQueryAttrsChange={onQueryAttrsChange} />;
+			return (
+				<SearchByConditionsQueryEditor
+					datasource={datasource}
+					queryAttrs={query.queryAttrs}
+					onQueryAttrsChange={onQueryAttrsChange}
+				/>
+			);
 		default:
 			return (
 				<Stack>
@@ -271,7 +342,7 @@ function OpQueryEditor({ operation, query, onQueryAttrsChange }: OpQueryProps) {
 	}
 }
 
-export function QueryEditor({ query, onChange, onRunQuery }: Props) {
+export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
 	// const operations = ['search_by_conditions', 'system_information'];
 	const operations = ['search_by_conditions'];
 
@@ -288,7 +359,6 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
 	let { operation } = query;
 	if (operation === undefined) {
 		onOperationChange(operations[0]);
-		operation = operations[0];
 	}
 
 	const operationOptions = toSelectableValues(operations);
@@ -304,7 +374,14 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
 					width={40}
 				/>
 			</InlineField>
-			{operation ? <OpQueryEditor operation={operation} query={query} onQueryAttrsChange={onQueryAttrsChange} /> : null}
+			{operation ? (
+				<OpQueryEditor
+					operation={operation}
+					datasource={datasource}
+					query={query}
+					onQueryAttrsChange={onQueryAttrsChange}
+				/>
+			) : null}
 		</Stack>
 	);
 }
