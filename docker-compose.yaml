@@ -35,6 +35,7 @@ services:
   harperdb:
     image: harperdb/harperdb
     container_name: 'gds-harperdb'
+    user: root
     volumes:
       - ./hdb:/home/harperdb/hdb
     networks:
