@@ -1,6 +1,8 @@
 import { test, expect } from '@grafana/plugin-e2e';
 
-test('should trigger new query when Constant field is changed', async ({
+// TODO: Write some tests for our query form. Template tests left in here for reference.
+
+test.skip('should trigger new query when Constant field is changed', async ({
   panelEditPage,
   readProvisionedDataSource,
 }) => {
@@ -12,7 +14,7 @@ test('should trigger new query when Constant field is changed', async ({
   await expect(await queryReq).toBeTruthy();
 });
 
-test('data query should return values 10 and 20', async ({ panelEditPage, readProvisionedDataSource }) => {
+test.skip('data query should return values 10 and 20', async ({ panelEditPage, readProvisionedDataSource }) => {
   const ds = await readProvisionedDataSource({ fileName: 'datasources.yml' });
   await panelEditPage.datasource.set(ds.name);
   await panelEditPage.getQueryEditorRow('A').getByRole('textbox', { name: 'Query Text' }).fill('test query');
@@ -20,3 +22,4 @@ test('data query should return values 10 and 20', async ({ panelEditPage, readPr
   await expect(panelEditPage.refreshPanel()).toBeOK();
   await expect(panelEditPage.panel.data).toContainText(['10', '20']);
 });
+
