@@ -11,6 +11,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"reflect"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -24,6 +25,7 @@ var (
 	_ backend.QueryDataHandler      = (*Datasource)(nil)
 	_ backend.CheckHealthHandler    = (*Datasource)(nil)
 	_ instancemgmt.InstanceDisposer = (*Datasource)(nil)
+	_ backend.CallResourceHandler   = (*Datasource)(nil)
 )
 
 type Settings struct {
@@ -45,16 +47,20 @@ func NewDatasource(_ context.Context, s backend.DataSourceInstanceSettings) (ins
 
 	client := harper.NewClient(settings.OpsAPIURL, settings.Username, password)
 
-	return &Datasource{
-		settings:  settings,
+	ds := &Datasource{
+		settings:     settings,
 		harperClient: client,
-	}, nil
+	}
+	resourceHandler := ds.newResourceHandler()
+	ds.CallResourceHandler = resourceHandler
+	return ds, nil
 }
 
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
 type Datasource struct {
-	settings  Settings
+	settings Settings
+	backend.CallResourceHandler
 	harperClient *harper.Client
 }
 
@@ -114,17 +120,32 @@ type SearchByConditionsQuery struct {
 	Conditions []Condition `json:"conditions"`
 }
 
-type queryModel struct {
-	Operation  string                  `json:"operation"`
-	QueryAttrs SearchByConditionsQuery `json:"queryAttrs"`
+type GetAnalyticsQuery struct {
+	Metric     string   `json:"metric"`
+	Attributes []string `json:"attributes"`
+	From       int64    `json:"from"`
+	To         int64    `json:"to"`
 }
 
-// flattenMap recursively converts nested HDB query result data structures
+type Query interface {
+	SearchByConditionsQuery | GetAnalyticsQuery
+}
+
+type queryOperation struct {
+	Operation string `json:"operation"`
+}
+
+type queryModel[Q Query] struct {
+	Operation  string `json:"operation"`
+	QueryAttrs Q      `json:"queryAttrs"`
+}
+
+// flattenMap recursively converts nested Harper query result data structures
 // into flat Grafana fields by appending prefixes to the field names
 // reflecting the key path to that data in the original structure.
 func flattenMap(source map[string]any, dest map[string]*data.Field, namePrefix string) {
-	for name, value := range source {
-		fieldName := namePrefix + name
+	for k, value := range source {
+		fieldName := namePrefix + k
 
 		switch v := value.(type) {
 		// TODO: Add more supported types
@@ -149,13 +170,6 @@ func flattenMap(source map[string]any, dest map[string]*data.Field, namePrefix s
 			}
 			dest[fieldName].Append(v)
 		case time.Time:
-			// TODO: I don't think this case is currently ever hit because we
-			// don't explicitly unmarshal any fields from JSON to time.Time.
-			// So this requires transforming the field type on the Grafana
-			// side for time series data. This works but is perhaps a little
-			// annoying for users. Need to think through whether or not there's
-			// a better approach to have time fields come through as time.Time
-			// so that transformation isn't necessary. - WSM 2025-01-09
 			if dest[fieldName] == nil {
 				dest[fieldName] = data.NewField(fieldName, nil, []time.Time{})
 			}
@@ -218,14 +232,14 @@ func flattenMap(source map[string]any, dest map[string]*data.Field, namePrefix s
 func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) (backend.DataResponse, error) {
 	var response backend.DataResponse
 
-	var qm queryModel
+	var qo queryOperation
 
-	err := json.Unmarshal(query.JSON, &qm)
+	err := json.Unmarshal(query.JSON, &qo)
 	if err != nil {
 		return backend.DataResponse{}, fmt.Errorf("could not unmarshal Grafana query JSON: '%s': '%w'", query.JSON, err)
 	}
 
-	log.DefaultLogger.Debug("Query", "query", qm)
+	log.DefaultLogger.Debug("Query", "operation", qo)
 
 	// create data frame response.
 	// For an overview on data frames and how grafana handles them:
@@ -233,8 +247,55 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 	frame := data.NewFrame("response")
 	frame.RefID = query.RefID
 
-	switch qm.Operation {
+	switch qo.Operation {
+	case "get_analytics":
+		var qm queryModel[GetAnalyticsQuery]
+		err := json.Unmarshal(query.JSON, &qm)
+		if err != nil {
+			return backend.DataResponse{}, fmt.Errorf("could not unmarshal get_analytics query JSON: '%s': '%w'", query.JSON, err)
+		}
+		request := qm.QueryAttrs
+		log.DefaultLogger.Debug("Query", "request", request)
+
+		metric := request.Metric
+
+		getAttrs := request.Attributes
+		if len(getAttrs) == 0 {
+			getAttrs = []string{"*"}
+		}
+
+		results, err := d.harperClient.GetAnalytics(metric, getAttrs, request.From, request.To)
+		if err != nil {
+			return backend.DataResponse{}, fmt.Errorf("could not query Harper analytics: '%s': '%w'", query.JSON, err)
+		}
+
+		log.DefaultLogger.Debug("Get analytics query results", "results", results)
+
+		mappedFields := make(map[string]*data.Field)
+		for _, result := range results {
+			log.DefaultLogger.Debug("get_analytics result fields", "count", len(result), "results", result)
+			flattenMap(result, mappedFields, "")
+		}
+
+		fields := make(data.Fields, 0, len(mappedFields))
+		// ensure stable sort order of fields; o/w Grafana changes their colors
+		// and positions in the legend on every refresh
+		keys := make([]string, 0, len(mappedFields))
+		for k := range mappedFields {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			fields = append(fields, mappedFields[k])
+		}
+
+		frame.Fields = fields
 	case "search_by_conditions":
+		var qm queryModel[SearchByConditionsQuery]
+		err := json.Unmarshal(query.JSON, &qm)
+		if err != nil {
+			return backend.DataResponse{}, fmt.Errorf("could not unmarshal search_by_conditions query JSON: '%s': '%w'", query.JSON, err)
+		}
 		search := qm.QueryAttrs
 
 		conditions := make([]harper.SearchCondition, 0, len(search.Conditions))
@@ -262,7 +323,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 
 		log.DefaultLogger.Debug("Query", "database", search.Database, "table", search.Table)
 		results := make([]map[string]any, 0)
-		err := d.harperClient.SearchByConditions(search.Database, search.Table, &results, conditions, getAttrs, opts)
+		err = d.harperClient.SearchByConditions(search.Database, search.Table, &results, conditions, getAttrs, opts)
 		if err != nil {
 			return backend.DataResponse{}, fmt.Errorf("error querying Harper: %w", err)
 		}
@@ -282,7 +343,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 
 		frame.Fields = fields
 	default:
-		return backend.DataResponse{}, errors.New("unsupported Harper operation: " + qm.Operation)
+		return backend.DataResponse{}, errors.New("unsupported Harper operation: " + qo.Operation)
 	}
 
 	response.Frames = append(response.Frames, frame)

@@ -33,59 +33,119 @@ export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSou
 
 		if (toType === 'auto' || toType === 'boolean') {
 			if (canonicalFieldVal === 'false') {
-				return {val: false, type: 'boolean'};
+				return { val: false, type: 'boolean' };
 			}
 
 			if (canonicalFieldVal === 'true') {
-				return {val: true, type: 'boolean'};
+				return { val: true, type: 'boolean' };
 			}
 		}
 
 		if (toType === 'auto' || toType === 'number') {
 			const numFieldVal = parseFloat(canonicalFieldVal);
 			if (!isNaN(numFieldVal) && numFieldVal.toString() === trimmedFieldVal) {
-				return {val: numFieldVal, type: 'number'};
+				return { val: numFieldVal, type: 'number' };
 			}
 		}
 
 		if (toType === 'auto' || toType === 'number_array') {
 			const elems = canonicalFieldVal.split(/\s*,\s*/);
 			const nums = elems.map((e) => parseFloat(e));
-			if (nums.every((n, i) => {
-				return !isNaN(n) && n.toString() === elems[i]
-			})) {
-				return {val: nums, type: 'number_array'};
+			if (
+				nums.every((n, i) => {
+					return !isNaN(n) && n.toString() === elems[i];
+				})
+			) {
+				return { val: nums, type: 'number_array' };
 			}
 		}
 
-		return {val: trimmedFieldVal, type: 'string'};
-	};
+		return { val: trimmedFieldVal, type: 'string' };
+	}
 
 	applyTemplateVariables(query: HarperQuery, scopedVars: ScopedVars) {
 		const templateSrv = getTemplateSrv();
-		const conditions = query.queryAttrs?.conditions?.map(c => {
-			const searchFieldVal: any = templateSrv.replace(c.search_value?.val.toString(), scopedVars);
-			const searchValType = c.searchValueType ?? 'auto';
-			const searchVal = this.coerceValue(searchFieldVal, searchValType);
-			return { ...c, search_value: searchVal }
-		});
-		return {
-			...query,
-			queryAttrs: { ...query.queryAttrs, conditions },
-		};
+		if (query.queryAttrs && 'conditions' in query.queryAttrs) {
+			const conditions = query.queryAttrs?.conditions?.map((c) => {
+				const searchFieldVal: any = templateSrv.replace(c.search_value?.val.toString(), scopedVars);
+				const searchValType = c.searchValueType ?? 'auto';
+				const searchVal = this.coerceValue(searchFieldVal, searchValType);
+				return { ...c, search_value: searchVal };
+			});
+			return {
+				...query,
+				queryAttrs: { ...query.queryAttrs, conditions },
+			};
+		} else if (query.queryAttrs && ('from' in query.queryAttrs || 'to' in query.queryAttrs)) {
+			const from = Number.parseInt(templateSrv.replace(query.queryAttrs?.from?.toString(), scopedVars), 10);
+			const to = Number.parseInt(templateSrv.replace(query.queryAttrs?.to?.toString(), scopedVars), 10);
+			return {
+				...query,
+				queryAttrs: { ...query.queryAttrs, from, to },
+			};
+		} else {
+			return query;
+		}
+	}
+
+	isSearchByConditionsQuery(query: HarperQuery) {
+		return (
+			query.operation === 'search_by_conditions' &&
+			!!query.queryAttrs &&
+			'database' in query.queryAttrs &&
+			'table' in query.queryAttrs &&
+			'conditions' in query.queryAttrs
+		);
+	}
+
+	/** This assumes query is a SearchByConditionsQuery, so call isSearchByConditionsQuery first if you're not sure
+	 */
+	isReadySearchByConditionsQuery(query: HarperQuery) {
+		if ('conditions' in query.queryAttrs!) {
+			return (
+				query.queryAttrs.conditions!.length > 0 &&
+				!!query.queryAttrs.conditions![0].search_attribute &&
+				query.queryAttrs.conditions![0].search_attribute.length > 0 &&
+				!!query.queryAttrs.conditions![0].search_type &&
+				query.queryAttrs.conditions![0].search_type.length > 0 &&
+				!!query.queryAttrs.conditions![0].search_value?.val
+			);
+		}
+		return false;
+	}
+
+	isGetAnalyticsQuery(query: HarperQuery) {
+		return (
+			query.operation === 'get_analytics' &&
+			!!query.queryAttrs &&
+			'metric' in query.queryAttrs
+		)
+	}
+
+	isReadyGetAnalyticsQuery(query: HarperQuery) {
+		if ('metric' in query.queryAttrs!) {
+			return (
+				query.queryAttrs.metric!.length > 0
+			);
+		}
+		return false;
 	}
 
 	filterQuery(query: HarperQuery) {
-		// if no query has been provided, prevent the query from being executed
-		return !!query.queryAttrs &&
-			!!query.queryAttrs.database &&
-			!!query.queryAttrs.table &&
-			!!query.queryAttrs.conditions &&
-			query.queryAttrs.conditions.length > 0 &&
-			!!query.queryAttrs.conditions[0].search_attribute &&
-			query.queryAttrs.conditions[0].search_attribute.length > 0 &&
-			!!query.queryAttrs.conditions[0].search_type &&
-			query.queryAttrs.conditions[0].search_type.length > 0 &&
-			!!query.queryAttrs.conditions[0].search_value?.val;
+		// prevent the query from being executed until it's minimally valid
+		return (this.isSearchByConditionsQuery(query) && this.isReadySearchByConditionsQuery(query))
+			|| (this.isGetAnalyticsQuery(query) && this.isReadyGetAnalyticsQuery(query));
+	}
+
+	listMetrics(types?: string[]): Promise<ListMetricsResponse> {
+		let params = {};
+		if (types) {
+			params = { types };
+		}
+		return this.getResource('/metrics', params);
+	}
+
+	describeMetric(metric: string): Promise<DescribeMetricResponse> {
+		return this.getResource(`/metrics/${metric}`);
 	}
 }

@@ -16,6 +16,7 @@ import {
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
 import {
+	AnalyticsQueryAttrs,
 	Condition,
 	HarperDataSourceOptions,
 	HarperQuery,
@@ -66,8 +67,8 @@ function toComboboxOptions(vs: string[]): Array<ComboboxOption<string>> {
 const sysInfoOptions = toSelectableValues(sysInfoAttrs);
 
 type SysInfoQueryProps = {
-	queryAttrs?: QueryAttrs;
-	onQueryAttrsChange: (attrs: QueryAttrs) => void;
+	queryAttrs?: SysInfoQueryAttrs;
+	onQueryAttrsChange: (attrs: SysInfoQueryAttrs) => void;
 };
 
 function SysInfoQueryEditor({ queryAttrs, onQueryAttrsChange }: SysInfoQueryProps) {
@@ -88,8 +89,8 @@ function SysInfoQueryEditor({ queryAttrs, onQueryAttrsChange }: SysInfoQueryProp
 
 interface SearchByConditionsQueryProps {
 	datasource: DataSource;
-	queryAttrs?: QueryAttrs;
-	onQueryAttrsChange: (attrs: QueryAttrs) => void;
+	queryAttrs?: SearchByConditionsQueryAttrs;
+	onQueryAttrsChange: (attrs: SearchByConditionsQueryAttrs) => void;
 }
 
 interface ConditionFormProps extends SearchByConditionsQueryProps {
@@ -181,9 +182,9 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 			</InlineField>
 			{(condition?.searchValueType === 'auto' || condition?.searchValueType !== condition?.search_value?.type) &&
 			condition?.search_value ? (
-				<InlineLabel width="auto">{condition?.search_value?.type}</InlineLabel>
+				<InlineLabel width="auto">{condition.search_value.type}</InlineLabel>
 			) : null}
-			{/*TODO: Figure out how to support nested conditions here*/}
+			{/*TODO: support nested conditions here*/}
 		</Stack>
 	);
 }
@@ -214,9 +215,7 @@ function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsCha
 		onQueryAttrsChange({});
 	}
 	if (queryAttrs) {
-		if (queryAttrs.conditions === undefined) {
-			queryAttrs.conditions = [newCondition(0)];
-		}
+		queryAttrs.conditions ??= [newCondition(0)];
 	}
 	let conditions = queryAttrs?.conditions;
 
@@ -333,16 +332,106 @@ function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsCha
 	);
 }
 
+interface AnalyticsQueryProps {
+	datasource: DataSource;
+	queryAttrs?: AnalyticsQueryAttrs;
+	onQueryAttrsChange: (queryAttrs: AnalyticsQueryAttrs) => void;
+}
+
+function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: AnalyticsQueryProps) {
+	const selectedMetric = queryAttrs?.metric;
+
+	if (queryAttrs?.from === undefined) {
+		onQueryAttrsChange({ ...queryAttrs, from: '${__from}' });
+	}
+	if (queryAttrs?.to === undefined) {
+		onQueryAttrsChange({ ...queryAttrs, to: '${__to}' });
+	}
+
+	const loadMetrics = React.useCallback(
+		async (input: string) => {
+			// TODO: Filter metrics based on `input`
+			const metrics = await datasource.listMetrics();
+			return toComboboxOptions(metrics);
+		},
+		[datasource]
+	);
+
+	const loadAttributes = React.useCallback(
+		async (input: string) => {
+			if (selectedMetric) {
+				// TODO: Filter attrs based on `input`
+				const desc = await datasource.describeMetric(selectedMetric);
+				return toComboboxOptions(desc.attributes);
+			}
+			return [];
+		},
+		[datasource, selectedMetric]
+	);
+
+	return (
+		<Stack gap={0} direction="column">
+			<InlineField label="Metric">
+				<Combobox
+					id="analytics-metric"
+					options={loadMetrics}
+					value={queryAttrs?.metric ? toComboboxOption(queryAttrs.metric) : null}
+					onChange={(v) => {
+						onQueryAttrsChange({ ...queryAttrs, metric: v.value, attributes: [] });
+					}}
+				/>
+			</InlineField>
+			<InlineField label="Attributes">
+				<MultiCombobox
+					id="analytics-attributes"
+					width="auto"
+					minWidth={25}
+					placeholder="*"
+					options={loadAttributes}
+					value={queryAttrs?.attributes ? toComboboxOptions(queryAttrs.attributes) : []}
+					onChange={(vs: Array<ComboboxOption<string>>) => {
+						onQueryAttrsChange({ ...queryAttrs, attributes: vs.map((v) => v.value) });
+					}}
+				/>
+			</InlineField>
+			<InlineField label="Start time">
+				<Input
+					id="analytics-start-time"
+					name="start-time"
+					value={queryAttrs?.from}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => onQueryAttrsChange({ ...queryAttrs, from: e.target.value })}
+				/>
+			</InlineField>
+			<InlineField label="End time">
+				<Input
+					id="analytics-end-time"
+					name="end-time"
+					value={queryAttrs?.to}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => onQueryAttrsChange({ ...queryAttrs, to: e.target.value })}
+				/>
+			</InlineField>
+		</Stack>
+	);
+}
+
 function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQueryProps) {
 	switch (operation) {
 		// system_information isn't currently used, but leaving here as an example of handling other ops
 		case 'system_information':
 			return <SysInfoQueryEditor queryAttrs={query.queryAttrs} onQueryAttrsChange={onQueryAttrsChange} />;
+		case 'get_analytics':
+			return (
+				<AnalyticsQueryEditor
+					datasource={datasource}
+					queryAttrs={query.queryAttrs as AnalyticsQueryAttrs}
+					onQueryAttrsChange={onQueryAttrsChange}
+				/>
+			);
 		case 'search_by_conditions':
 			return (
 				<SearchByConditionsQueryEditor
 					datasource={datasource}
-					queryAttrs={query.queryAttrs}
+					queryAttrs={query.queryAttrs as SearchByConditionsQueryAttrs}
 					onQueryAttrsChange={onQueryAttrsChange}
 				/>
 			);
@@ -358,8 +447,8 @@ function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQ
 }
 
 export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
-	// const operations = ['search_by_conditions', 'system_information'];
-	const operations = ['search_by_conditions'];
+	// const operations = ['get_analytics', 'search_by_conditions', 'system_information'];
+	const operations = ['get_analytics', 'search_by_conditions'];
 
 	const onQueryAttrsChange = (attrs: QueryAttrs) => {
 		onChange({ ...query, queryAttrs: attrs });
@@ -370,7 +459,7 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
 		onChange({ ...query, operation: operation });
 	};
 
-	// set default op since we only have one; probably remove this when / if we add others?
+	// set default op to first one
 	let { operation } = query;
 	if (operation === undefined) {
 		onOperationChange(operations[0]);
