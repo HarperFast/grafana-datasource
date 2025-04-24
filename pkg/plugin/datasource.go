@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	harperdb "github.com/HarperDB-Add-Ons/sdk-go"
+	harper "github.com/HarperDB/sdk-go"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
@@ -40,14 +40,14 @@ func NewDatasource(_ context.Context, s backend.DataSourceInstanceSettings) (ins
 
 	password, exists := s.DecryptedSecureJSONData["password"]
 	if !exists {
-		return backend.DataResponse{}, fmt.Errorf("no password found for HarperDB connection")
+		return backend.DataResponse{}, fmt.Errorf("no password found for Harper connection")
 	}
 
-	client := harperdb.NewClient(settings.OpsAPIURL, settings.Username, password)
+	client := harper.NewClient(settings.OpsAPIURL, settings.Username, password)
 
 	return &Datasource{
 		settings:  settings,
-		hdbClient: client,
+		harperClient: client,
 	}, nil
 }
 
@@ -55,7 +55,7 @@ func NewDatasource(_ context.Context, s backend.DataSourceInstanceSettings) (ins
 // its health and has streaming skills.
 type Datasource struct {
 	settings  Settings
-	hdbClient *harperdb.Client
+	harperClient *harper.Client
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
@@ -237,9 +237,9 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 	case "search_by_conditions":
 		search := qm.QueryAttrs
 
-		conditions := make([]harperdb.SearchCondition, 0)
+		conditions := make([]harper.SearchCondition, 0, len(search.Conditions))
 		for _, condition := range search.Conditions {
-			conditions = append(conditions, harperdb.SearchCondition{
+			conditions = append(conditions, harper.SearchCondition{
 				Attribute: condition.SearchAttribute,
 				Type:      condition.SearchType,
 				Value:     condition.SearchValue.Val,
@@ -256,33 +256,33 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 
 		log.DefaultLogger.Debug("Query", "getAttrs", getAttrs)
 
-		opts := harperdb.SearchByConditionsOptions{Operator: search.Operator}
+		opts := harper.SearchByConditionsOptions{Operator: search.Operator}
 
 		log.DefaultLogger.Debug("Query", "opts", opts)
 
 		log.DefaultLogger.Debug("Query", "database", search.Database, "table", search.Table)
 		results := make([]map[string]any, 0)
-		err := d.hdbClient.SearchByConditions(search.Database, search.Table, &results, conditions, getAttrs, opts)
+		err := d.harperClient.SearchByConditions(search.Database, search.Table, &results, conditions, getAttrs, opts)
 		if err != nil {
-			return backend.DataResponse{}, fmt.Errorf("error querying HarperDB: %w", err)
+			return backend.DataResponse{}, fmt.Errorf("error querying Harper: %w", err)
 		}
 
 		log.DefaultLogger.Debug("Query", "results", results)
 
 		mappedFields := make(map[string]*data.Field)
 		for _, result := range results {
-			log.DefaultLogger.Debug("Result fields", "count", len(result), "result", result)
+			log.DefaultLogger.Debug("Result fields", "count", len(result), "results", result)
 			flattenMap(result, mappedFields, "")
 		}
 
-		fields := make(data.Fields, 0)
+		fields := make(data.Fields, 0, len(mappedFields))
 		for _, field := range mappedFields {
 			fields = append(fields, field)
 		}
 
 		frame.Fields = fields
 	default:
-		return backend.DataResponse{}, errors.New("unsupported HDB operation: " + qm.Operation)
+		return backend.DataResponse{}, errors.New("unsupported Harper operation: " + qm.Operation)
 	}
 
 	response.Frames = append(response.Frames, frame)
@@ -297,10 +297,10 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
 
-	err := d.hdbClient.Healthcheck()
+	err := d.harperClient.Healthcheck()
 	if err != nil {
 		res.Status = backend.HealthStatusError
-		var opErr *harperdb.OperationError
+		var opErr *harper.OperationError
 		if errors.As(err, &opErr) {
 			res.Message = fmt.Sprintf("Health check returned unexpected status code: '%d' with message: '%s'",
 				opErr.StatusCode, opErr.Message)

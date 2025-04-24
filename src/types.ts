@@ -37,13 +37,13 @@ type SearchByConditionsQueryAttrs = {
 
 export type QueryAttrs = SysInfoQueryAttrs & SearchByConditionsQueryAttrs;
 
-export interface HDBQuery extends DataQuery {
+export interface HarperQuery extends DataQuery {
 	operation?: string;
 	queryAttrs?: QueryAttrs;
 }
 
-export const DEFAULT_QUERY: Partial<HDBQuery> = {
 	operation: 'search_by_conditions',
+export const DEFAULT_QUERY: Partial<HarperQuery> = {
 };
 
 export interface DataPoint {
@@ -58,7 +58,7 @@ export interface DataSourceResponse {
 /**
  * These are options configured for each DataSource instance
  */
-export interface HDBDataSourceOptions extends DataSourceJsonData {
+export interface HarperDataSourceOptions extends DataSourceJsonData {
 	opsAPIURL?: string;
 	username?: string;
 }
@@ -66,6 +66,6 @@ export interface HDBDataSourceOptions extends DataSourceJsonData {
 /**
  * Value that is used in the backend, but never sent over HTTP to the frontend
  */
-export interface HDBSecureJsonData {
+export interface HarperSecureJsonData {
 	password?: string;
 }

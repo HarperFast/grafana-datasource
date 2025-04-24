@@ -1,19 +1,21 @@
 import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
-import {DataSourceWithBackend, getTemplateSrv} from '@grafana/runtime';
+import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 
 import {
-	HDBQuery,
-	HDBDataSourceOptions,
+	HarperQuery,
+	HarperDataSourceOptions,
 	DEFAULT_QUERY,
 	SearchValue,
+	ListMetricsResponse,
+	DescribeMetricResponse
 } from './types';
 
-export class DataSource extends DataSourceWithBackend<HDBQuery, HDBDataSourceOptions> {
-	constructor(instanceSettings: DataSourceInstanceSettings<HDBDataSourceOptions>) {
+export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSourceOptions> {
+	constructor(instanceSettings: DataSourceInstanceSettings<HarperDataSourceOptions>) {
 		super(instanceSettings);
 	}
 
-	getDefaultQuery(_: CoreApp): Partial<HDBQuery> {
+	getDefaultQuery(_: CoreApp): Partial<HarperQuery> {
 		return DEFAULT_QUERY;
 	}
 
@@ -59,7 +61,7 @@ export class DataSource extends DataSourceWithBackend<HDBQuery, HDBDataSourceOpt
 		return {val: trimmedFieldVal, type: 'string'};
 	};
 
-	applyTemplateVariables(query: HDBQuery, scopedVars: ScopedVars) {
+	applyTemplateVariables(query: HarperQuery, scopedVars: ScopedVars) {
 		const templateSrv = getTemplateSrv();
 		const conditions = query.queryAttrs?.conditions?.map(c => {
 			const searchFieldVal: any = templateSrv.replace(c.search_value?.val.toString(), scopedVars);
@@ -73,7 +75,7 @@ export class DataSource extends DataSourceWithBackend<HDBQuery, HDBDataSourceOpt
 		};
 	}
 
-	filterQuery(query: HDBQuery): boolean {
+	filterQuery(query: HarperQuery) {
 		// if no query has been provided, prevent the query from being executed
 		return !!query.queryAttrs &&
 			!!query.queryAttrs.database &&

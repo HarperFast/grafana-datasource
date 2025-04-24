@@ -1,7 +1,7 @@
 package models
 
 import (
-	harperdb "github.com/HarperDB-Add-Ons/sdk-go"
+	harper "github.com/HarperDB/sdk-go"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"slices"
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func systemToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func systemToFields(sysInfo *harper.SysInfo) data.Fields {
 	return data.Fields{
 		data.NewField("System.Platform", nil, []string{sysInfo.System.Platform}),
 		data.NewField("System.Distro", nil, []string{sysInfo.System.Distro}),
@@ -23,7 +23,7 @@ func systemToFields(sysInfo *harperdb.SysInfo) data.Fields {
 	}
 }
 
-func timeToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func timeToFields(sysInfo *harper.SysInfo) data.Fields {
 	return data.Fields{
 		data.NewField("Time.Current", nil, []time.Time{sysInfo.Time.Current.ToTime()}),
 		data.NewField("Time.Uptime", nil, []float64{sysInfo.Time.Uptime}),
@@ -46,7 +46,7 @@ func timeToFields(sysInfo *harperdb.SysInfo) data.Fields {
 //	}), ",")
 //}
 
-func cpuToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func cpuToFields(sysInfo *harper.SysInfo) data.Fields {
 	fields := data.Fields{
 		data.NewField("CPU.Manufacturer", nil, []string{sysInfo.CPU.Manufacturer}),
 		data.NewField("CPU.Brand", nil, []string{sysInfo.CPU.Brand}),
@@ -86,7 +86,7 @@ func cpuToFields(sysInfo *harperdb.SysInfo) data.Fields {
 	return fields
 }
 
-func memoryToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func memoryToFields(sysInfo *harper.SysInfo) data.Fields {
 	return data.Fields{
 		data.NewField("Memory.Total", nil, []int64{sysInfo.Memory.Total}),
 		data.NewField("Memory.Free", nil, []int64{sysInfo.Memory.Total}),
@@ -99,7 +99,7 @@ func memoryToFields(sysInfo *harperdb.SysInfo) data.Fields {
 	}
 }
 
-func diskToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func diskToFields(sysInfo *harper.SysInfo) data.Fields {
 	fields := data.Fields{
 		data.NewField("Disk.IO.RIO", nil, []int64{sysInfo.Disk.IO.RIO}),
 		data.NewField("Disk.IO.WIO", nil, []int64{sysInfo.Disk.IO.WIO}),
@@ -126,7 +126,7 @@ func diskToFields(sysInfo *harperdb.SysInfo) data.Fields {
 	return fields
 }
 
-func networkInterfacesToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func networkInterfacesToFields(sysInfo *harper.SysInfo) data.Fields {
 	fields := make(data.Fields, 0)
 
 	for _, iface := range sysInfo.Network.Interfaces {
@@ -148,7 +148,7 @@ func networkInterfacesToFields(sysInfo *harperdb.SysInfo) data.Fields {
 	return fields
 }
 
-func networkStatsToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func networkStatsToFields(sysInfo *harper.SysInfo) data.Fields {
 	fields := make(data.Fields, 0)
 
 	for _, stats := range sysInfo.Network.Stats {
@@ -168,7 +168,7 @@ func networkStatsToFields(sysInfo *harperdb.SysInfo) data.Fields {
 	return fields
 }
 
-func networkConnectionsToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func networkConnectionsToFields(sysInfo *harper.SysInfo) data.Fields {
 	fields := make(data.Fields, 0)
 
 	for idx, conn := range sysInfo.Network.Connections {
@@ -188,7 +188,7 @@ func networkConnectionsToFields(sysInfo *harperdb.SysInfo) data.Fields {
 	return fields
 }
 
-func networkToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func networkToFields(sysInfo *harper.SysInfo) data.Fields {
 	fields := data.Fields{
 		data.NewField("Network.DefaultInterface", nil, []string{sysInfo.Network.DefaultInterface}),
 		data.NewField("Network.Latency.URL", nil, []string{sysInfo.Network.Latency.URL}),
@@ -288,7 +288,7 @@ func networkToFields(sysInfo *harperdb.SysInfo) data.Fields {
 //	}
 //}
 
-func threadsToFields(sysInfo *harperdb.SysInfo) data.Fields {
+func threadsToFields(sysInfo *harper.SysInfo) data.Fields {
 	fields := make(data.Fields, 0)
 
 	for _, thread := range sysInfo.Threads {
@@ -309,10 +309,10 @@ func threadsToFields(sysInfo *harperdb.SysInfo) data.Fields {
 	return fields
 }
 
-func SysInfoToFields(sysInfo *harperdb.SysInfo, attrs []string) data.Fields {
+func SysInfoToFields(sysInfo *harper.SysInfo, attrs []string) data.Fields {
 	fields := make(data.Fields, 0)
 
-	log.DefaultLogger.Debug("Requesting HarperDB system information attributes", "attrs", attrs)
+	log.DefaultLogger.Debug("Requesting Harper system information attributes", "attrs", attrs)
 
 	if len(attrs) == 0 || slices.Contains(attrs, "system") {
 		fields = append(fields, systemToFields(sysInfo)...)

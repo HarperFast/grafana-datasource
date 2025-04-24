@@ -13,13 +13,20 @@ import {
 } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { Condition, HDBDataSourceOptions, HDBQuery, QueryAttrs } from '../types';
+import {
+	Condition,
+	HarperDataSourceOptions,
+	HarperQuery,
+	QueryAttrs,
+	SearchByConditionsQueryAttrs,
+	SysInfoQueryAttrs,
+} from '../types';
 
-type Props = QueryEditorProps<DataSource, HDBQuery, HDBDataSourceOptions>;
+type Props = QueryEditorProps<DataSource, HarperQuery, HarperDataSourceOptions>;
 type OpQueryProps = {
 	operation: string;
 	datasource: DataSource;
-	query: HDBQuery;
+	query: HarperQuery;
 	onQueryAttrsChange: (attrs: QueryAttrs) => void;
 };
 
