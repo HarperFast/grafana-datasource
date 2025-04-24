@@ -1,10 +1,6 @@
 import { DataSourceJsonData } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 
-export interface SysInfoQueryAttrs {
-	attributes?: string[]; // TODO: Maybe restrict this to the supported set?
-}
-
 type Sort = {
 	attribute?: string;
 	descending?: boolean;
@@ -43,7 +39,7 @@ export interface AnalyticsQueryAttrs {
 	to?: string;
 }
 
-export type QueryAttrs = SysInfoQueryAttrs | SearchByConditionsQueryAttrs | AnalyticsQueryAttrs;
+export type QueryAttrs = SearchByConditionsQueryAttrs | AnalyticsQueryAttrs;
 
 export interface HarperQuery extends DataQuery {
 	operation?: string;

@@ -4,7 +4,6 @@ import {
 	Input,
 	Stack,
 	Alert,
-	MultiSelect,
 	Checkbox,
 	Label,
 	Button,
@@ -13,7 +12,7 @@ import {
 	ComboboxOption,
 	MultiCombobox,
 } from '@grafana/ui';
-import { QueryEditorProps, SelectableValue } from '@grafana/data';
+import { QueryEditorProps } from '@grafana/data';
 import { DataSource } from '../datasource';
 import {
 	AnalyticsQueryAttrs,
@@ -22,7 +21,6 @@ import {
 	HarperQuery,
 	QueryAttrs,
 	SearchByConditionsQueryAttrs,
-	SysInfoQueryAttrs,
 } from '../types';
 
 type Props = QueryEditorProps<DataSource, HarperQuery, HarperDataSourceOptions>;
@@ -33,58 +31,12 @@ type OpQueryProps = {
 	onQueryAttrsChange: (attrs: QueryAttrs) => void;
 };
 
-// TODO: Consider pulling these from a backend resource handler instead of duplicating here
-const sysInfoAttrs = [
-	'system',
-	'time',
-	'cpu',
-	'memory',
-	'disk',
-	'network',
-	'harperdb_processes',
-	'table_size',
-	'metrics',
-	'threads',
-	'replication',
-];
-
-function toSelectableValue(v: string): SelectableValue<string> {
-	return { label: v, value: v.toLowerCase().replaceAll(/\s+/g, '_') };
-}
-
-function toSelectableValues(vs: string[]): Array<SelectableValue<string>> {
-	return vs.map(toSelectableValue);
-}
-
 function toComboboxOption(v: string): ComboboxOption<string> {
 	return { label: v, value: v };
 }
 
 function toComboboxOptions(vs: string[]): Array<ComboboxOption<string>> {
 	return vs.map(toComboboxOption);
-}
-
-const sysInfoOptions = toSelectableValues(sysInfoAttrs);
-
-type SysInfoQueryProps = {
-	queryAttrs?: SysInfoQueryAttrs;
-	onQueryAttrsChange: (attrs: SysInfoQueryAttrs) => void;
-};
-
-function SysInfoQueryEditor({ queryAttrs, onQueryAttrsChange }: SysInfoQueryProps) {
-	return (
-		<Stack gap={0}>
-			<InlineField label="System Information Attributes" tooltip="Leave empty for 'all'">
-				<MultiSelect
-					id="query-editor-sys-info"
-					options={sysInfoOptions}
-					value={queryAttrs?.attributes}
-					onChange={(v) => onQueryAttrsChange({ attributes: v.map((sv) => sv.value ?? '') })}
-					width={80}
-				/>
-			</InlineField>
-		</Stack>
-	);
 }
 
 interface SearchByConditionsQueryProps {
@@ -416,9 +368,6 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 
 function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQueryProps) {
 	switch (operation) {
-		// system_information isn't currently used, but leaving here as an example of handling other ops
-		case 'system_information':
-			return <SysInfoQueryEditor queryAttrs={query.queryAttrs} onQueryAttrsChange={onQueryAttrsChange} />;
 		case 'get_analytics':
 			return (
 				<AnalyticsQueryEditor
@@ -447,7 +396,6 @@ function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQ
 }
 
 export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
-	// const operations = ['get_analytics', 'search_by_conditions', 'system_information'];
 	const operations = ['get_analytics', 'search_by_conditions'];
 
 	const onQueryAttrsChange = (attrs: QueryAttrs) => {
