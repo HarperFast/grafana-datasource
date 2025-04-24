@@ -5,7 +5,7 @@ go 1.23.5
 toolchain go1.23.6
 
 require (
-	github.com/HarperDB/sdk-go v0.0.0-20250423192344-4e44d216e2be
+	github.com/HarperDB/sdk-go v0.0.0-20250424184828-2996e6de315a
 	github.com/grafana/grafana-plugin-sdk-go v0.274.0
 )
 
