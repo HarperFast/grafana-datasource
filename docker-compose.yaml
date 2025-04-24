@@ -1,13 +1,13 @@
 services:
   grafana:
     user: root
-    container_name: 'harperdb-grafana-datasource'
+    container_name: 'harper-grafana-datasource'
 
     build:
       context: ./.config
       args:
         grafana_image: ${GRAFANA_IMAGE:-grafana-enterprise}
-        grafana_version: ${GRAFANA_VERSION:-11.3.2}
+        grafana_version: ${GRAFANA_VERSION:-11.6.1}
         development: ${DEVELOPMENT:-false}
     ports:
       - 3000:3000/tcp
@@ -18,33 +18,35 @@ services:
     cap_add:
       - SYS_PTRACE
     volumes:
-      - ./dist:/var/lib/grafana/plugins/harperdb-datasource
+      - ./dist:/var/lib/grafana/plugins/harper-datasource
       - ./provisioning:/etc/grafana/provisioning
-      - .:/root/harperdb-datasource
+      - .:/root/harper-datasource
 
     environment:
       NODE_ENV: development
-      GF_LOG_FILTERS: plugin.harperdb-datasource:debug
+      GF_LOG_FILTERS: plugin.harper-datasource:debug
       GF_LOG_LEVEL: debug
       GF_DATAPROXY_LOGGING: 1
-      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: harperdb-datasource
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: harper-datasource
 
     networks:
-      - grafana-harperdb
+      - grafana-harper
 
-  harperdb:
-    image: harperdb/harperdb
-    container_name: 'gds-harperdb'
+  harper:
+    image: harpersystems/harper:local
+    container_name: 'gds-harper'
     user: root
     volumes:
-      - ./hdb:/home/harperdb/hdb
+      - ./hdb:/home/harper/hdb
     networks:
-      - grafana-harperdb
+      - grafana-harper
     ports:
       - '49925:9925'
+      - '49926:9926'
     environment:
       HDB_ADMIN_USERNAME: admin
       HDB_ADMIN_PASSWORD: foobarbaz
+      LOGGING_LEVEL: trace
 
 networks:
-  grafana-harperdb:
+  grafana-harper:

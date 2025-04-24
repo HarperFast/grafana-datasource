@@ -3,23 +3,33 @@ import {
 	InlineField,
 	Input,
 	Stack,
-	Select,
 	Alert,
 	MultiSelect,
 	Checkbox,
 	Label,
 	Button,
 	InlineLabel,
+	Combobox,
+	ComboboxOption,
+	MultiCombobox,
 } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { Condition, HDBDataSourceOptions, HDBQuery, QueryAttrs } from '../types';
+import {
+	AnalyticsQueryAttrs,
+	Condition,
+	HarperDataSourceOptions,
+	HarperQuery,
+	QueryAttrs,
+	SearchByConditionsQueryAttrs,
+	SysInfoQueryAttrs,
+} from '../types';
 
-type Props = QueryEditorProps<DataSource, HDBQuery, HDBDataSourceOptions>;
+type Props = QueryEditorProps<DataSource, HarperQuery, HarperDataSourceOptions>;
 type OpQueryProps = {
 	operation: string;
 	datasource: DataSource;
-	query: HDBQuery;
+	query: HarperQuery;
 	onQueryAttrsChange: (attrs: QueryAttrs) => void;
 };
 
@@ -38,18 +48,27 @@ const sysInfoAttrs = [
 	'replication',
 ];
 
+function toSelectableValue(v: string): SelectableValue<string> {
+	return { label: v, value: v.toLowerCase().replaceAll(/\s+/g, '_') };
+}
+
 function toSelectableValues(vs: string[]): Array<SelectableValue<string>> {
-	return vs.map((v) => ({
-		label: v,
-		value: v.toLowerCase().replaceAll(/\s+/g, '_'),
-	}));
+	return vs.map(toSelectableValue);
+}
+
+function toComboboxOption(v: string): ComboboxOption<string> {
+	return { label: v, value: v };
+}
+
+function toComboboxOptions(vs: string[]): Array<ComboboxOption<string>> {
+	return vs.map(toComboboxOption);
 }
 
 const sysInfoOptions = toSelectableValues(sysInfoAttrs);
 
 type SysInfoQueryProps = {
-	queryAttrs?: QueryAttrs;
-	onQueryAttrsChange: (attrs: QueryAttrs) => void;
+	queryAttrs?: SysInfoQueryAttrs;
+	onQueryAttrsChange: (attrs: SysInfoQueryAttrs) => void;
 };
 
 function SysInfoQueryEditor({ queryAttrs, onQueryAttrsChange }: SysInfoQueryProps) {
@@ -70,8 +89,8 @@ function SysInfoQueryEditor({ queryAttrs, onQueryAttrsChange }: SysInfoQueryProp
 
 interface SearchByConditionsQueryProps {
 	datasource: DataSource;
-	queryAttrs?: QueryAttrs;
-	onQueryAttrsChange: (attrs: QueryAttrs) => void;
+	queryAttrs?: SearchByConditionsQueryAttrs;
+	onQueryAttrsChange: (attrs: SearchByConditionsQueryAttrs) => void;
 }
 
 interface ConditionFormProps extends SearchByConditionsQueryProps {
@@ -96,7 +115,7 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 	const condition = queryAttrs?.conditions?.[index];
 
 	const searchValueTypes = ['Auto', 'String', 'Number', 'Boolean', 'Number Array'];
-	const searchValueTypesOptions = toSelectableValues(searchValueTypes);
+	const searchValueTypesOptions = toComboboxOptions(searchValueTypes);
 
 	return (
 		<Stack gap={0} direction="row">
@@ -115,17 +134,15 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 				/>
 			</InlineField>
 			<InlineField label="Search type" style={{ marginLeft: '16px' }}>
-				<Select
+				<Combobox
 					id="search-by-conditions-search-type"
-					name="search-type"
-					options={toSelectableValues(searchTypes)}
+					options={toComboboxOptions(searchTypes)}
 					value={condition?.search_type}
 					onChange={(v) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
 						conditions[index] = { ...conditions[index], search_type: v.value };
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
-					required
 				/>
 			</InlineField>
 			<InlineField label="Search value" style={{ marginLeft: '16px' }}>
@@ -148,9 +165,8 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 				/>
 			</InlineField>
 			<InlineField label="Type">
-				<Select
+				<Combobox
 					id="search-by-conditions-search-value-type"
-					name="search-value-type"
 					options={searchValueTypesOptions}
 					value={condition?.searchValueType}
 					onChange={(v) => {
@@ -166,9 +182,9 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 			</InlineField>
 			{(condition?.searchValueType === 'auto' || condition?.searchValueType !== condition?.search_value?.type) &&
 			condition?.search_value ? (
-				<InlineLabel width="auto">{condition?.search_value?.type}</InlineLabel>
+				<InlineLabel width="auto">{condition.search_value.type}</InlineLabel>
 			) : null}
-			{/*TODO: Figure out how to support nested conditions here*/}
+			{/*TODO: support nested conditions here*/}
 		</Stack>
 	);
 }
@@ -199,9 +215,7 @@ function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsCha
 		onQueryAttrsChange({});
 	}
 	if (queryAttrs) {
-		if (queryAttrs.conditions === undefined) {
-			queryAttrs.conditions = [newCondition(0)];
-		}
+		queryAttrs.conditions ??= [newCondition(0)];
 	}
 	let conditions = queryAttrs?.conditions;
 
@@ -228,10 +242,10 @@ function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsCha
 				/>
 			</InlineField>
 			<InlineField label="Operator">
-				<Select
+				<Combobox
 					id="search-by-conditions-operator"
 					onChange={(v) => onQueryAttrsChange({ ...queryAttrs, operator: v.value })}
-					options={toSelectableValues(searchOperators)}
+					options={toComboboxOptions(searchOperators)}
 					value={queryAttrs?.operator}
 					placeholder="and"
 				/>
@@ -318,16 +332,106 @@ function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsCha
 	);
 }
 
+interface AnalyticsQueryProps {
+	datasource: DataSource;
+	queryAttrs?: AnalyticsQueryAttrs;
+	onQueryAttrsChange: (queryAttrs: AnalyticsQueryAttrs) => void;
+}
+
+function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: AnalyticsQueryProps) {
+	const selectedMetric = queryAttrs?.metric;
+
+	if (queryAttrs?.from === undefined) {
+		onQueryAttrsChange({ ...queryAttrs, from: '${__from}' });
+	}
+	if (queryAttrs?.to === undefined) {
+		onQueryAttrsChange({ ...queryAttrs, to: '${__to}' });
+	}
+
+	const loadMetrics = React.useCallback(
+		async (input: string) => {
+			// TODO: Filter metrics based on `input`
+			const metrics = await datasource.listMetrics();
+			return toComboboxOptions(metrics);
+		},
+		[datasource]
+	);
+
+	const loadAttributes = React.useCallback(
+		async (input: string) => {
+			if (selectedMetric) {
+				// TODO: Filter attrs based on `input`
+				const desc = await datasource.describeMetric(selectedMetric);
+				return toComboboxOptions(desc.attributes);
+			}
+			return [];
+		},
+		[datasource, selectedMetric]
+	);
+
+	return (
+		<Stack gap={0} direction="column">
+			<InlineField label="Metric">
+				<Combobox
+					id="analytics-metric"
+					options={loadMetrics}
+					value={queryAttrs?.metric ? toComboboxOption(queryAttrs.metric) : null}
+					onChange={(v) => {
+						onQueryAttrsChange({ ...queryAttrs, metric: v.value, attributes: [] });
+					}}
+				/>
+			</InlineField>
+			<InlineField label="Attributes">
+				<MultiCombobox
+					id="analytics-attributes"
+					width="auto"
+					minWidth={25}
+					placeholder="*"
+					options={loadAttributes}
+					value={queryAttrs?.attributes ? toComboboxOptions(queryAttrs.attributes) : []}
+					onChange={(vs: Array<ComboboxOption<string>>) => {
+						onQueryAttrsChange({ ...queryAttrs, attributes: vs.map((v) => v.value) });
+					}}
+				/>
+			</InlineField>
+			<InlineField label="Start time">
+				<Input
+					id="analytics-start-time"
+					name="start-time"
+					value={queryAttrs?.from}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => onQueryAttrsChange({ ...queryAttrs, from: e.target.value })}
+				/>
+			</InlineField>
+			<InlineField label="End time">
+				<Input
+					id="analytics-end-time"
+					name="end-time"
+					value={queryAttrs?.to}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => onQueryAttrsChange({ ...queryAttrs, to: e.target.value })}
+				/>
+			</InlineField>
+		</Stack>
+	);
+}
+
 function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQueryProps) {
 	switch (operation) {
 		// system_information isn't currently used, but leaving here as an example of handling other ops
 		case 'system_information':
 			return <SysInfoQueryEditor queryAttrs={query.queryAttrs} onQueryAttrsChange={onQueryAttrsChange} />;
+		case 'get_analytics':
+			return (
+				<AnalyticsQueryEditor
+					datasource={datasource}
+					queryAttrs={query.queryAttrs as AnalyticsQueryAttrs}
+					onQueryAttrsChange={onQueryAttrsChange}
+				/>
+			);
 		case 'search_by_conditions':
 			return (
 				<SearchByConditionsQueryEditor
 					datasource={datasource}
-					queryAttrs={query.queryAttrs}
+					queryAttrs={query.queryAttrs as SearchByConditionsQueryAttrs}
 					onQueryAttrsChange={onQueryAttrsChange}
 				/>
 			);
@@ -343,8 +447,8 @@ function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQ
 }
 
 export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
-	// const operations = ['search_by_conditions', 'system_information'];
-	const operations = ['search_by_conditions'];
+	// const operations = ['get_analytics', 'search_by_conditions', 'system_information'];
+	const operations = ['get_analytics', 'search_by_conditions'];
 
 	const onQueryAttrsChange = (attrs: QueryAttrs) => {
 		onChange({ ...query, queryAttrs: attrs });
@@ -355,18 +459,18 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
 		onChange({ ...query, operation: operation });
 	};
 
-	// set default op since we only have one; probably remove this when / if we add others?
+	// set default op to first one
 	let { operation } = query;
 	if (operation === undefined) {
 		onOperationChange(operations[0]);
 	}
 
-	const operationOptions = toSelectableValues(operations);
+	const operationOptions = toComboboxOptions(operations);
 
 	return (
 		<Stack gap={2} direction="column">
 			<InlineField label="Operation">
-				<Select
+				<Combobox
 					id="query-editor-operation"
 					options={operationOptions}
 					onChange={({ value }) => onOperationChange(value)}

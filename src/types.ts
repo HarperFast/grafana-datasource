@@ -1,9 +1,9 @@
 import { DataSourceJsonData } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 
-type SysInfoQueryAttrs = {
+export interface SysInfoQueryAttrs {
 	attributes?: string[]; // TODO: Maybe restrict this to the supported set?
-};
+}
 
 type Sort = {
 	attribute?: string;
@@ -26,39 +26,38 @@ export type Condition = {
 	conditions?: Condition[];
 }
 
-type SearchByConditionsQueryAttrs = {
+export interface SearchByConditionsQueryAttrs {
 	database?: string;
 	table?: string;
 	operator?: string;
 	sort?: Sort;
 	get_attributes?: string[];
 	conditions?: Condition[];
+	attributes?: string[];
 }
 
-export type QueryAttrs = SysInfoQueryAttrs & SearchByConditionsQueryAttrs;
+export interface AnalyticsQueryAttrs {
+	metric?: string;
+	attributes?: string[];
+	from?: string;
+	to?: string;
+}
 
-export interface HDBQuery extends DataQuery {
+export type QueryAttrs = SysInfoQueryAttrs | SearchByConditionsQueryAttrs | AnalyticsQueryAttrs;
+
+export interface HarperQuery extends DataQuery {
 	operation?: string;
 	queryAttrs?: QueryAttrs;
 }
 
-export const DEFAULT_QUERY: Partial<HDBQuery> = {
-	operation: 'search_by_conditions',
+export const DEFAULT_QUERY: Partial<HarperQuery> = {
+	operation: 'get_analytics',
 };
-
-export interface DataPoint {
-	Time: number;
-	Value: number;
-}
-
-export interface DataSourceResponse {
-	datapoints: DataPoint[];
-}
 
 /**
  * These are options configured for each DataSource instance
  */
-export interface HDBDataSourceOptions extends DataSourceJsonData {
+export interface HarperDataSourceOptions extends DataSourceJsonData {
 	opsAPIURL?: string;
 	username?: string;
 }
@@ -66,6 +65,12 @@ export interface HDBDataSourceOptions extends DataSourceJsonData {
 /**
  * Value that is used in the backend, but never sent over HTTP to the frontend
  */
-export interface HDBSecureJsonData {
+export interface HarperSecureJsonData {
 	password?: string;
+}
+
+export type ListMetricsResponse = string[];
+
+export interface DescribeMetricResponse {
+	attributes: string[];
 }

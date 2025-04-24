@@ -1,15 +1,15 @@
 apiVersion: 1
 
 datasources:
-  - name: 'harperdb-datasource'
-    type: 'harperdb-datasource'
+  - name: 'harper-datasource'
+    type: 'harper-datasource'
     access: proxy
     isDefault: false
     orgId: 1
     version: 1
     editable: true
     jsonData:
-      opsAPIURL: 'http://harperdb:9925/'
+      opsAPIURL: 'http://harper:9925/'
       username: 'admin'
     secureJsonData:
       password: 'foobarbaz'

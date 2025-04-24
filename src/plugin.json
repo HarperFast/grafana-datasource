@@ -1,18 +1,19 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
-  "name": "HarperDB Datasource",
-  "id": "harperdb-datasource",
+  "name": "Harper",
+  "id": "harper-datasource",
   "metrics": true,
   "backend": true,
   "alerting": true,
-  "executable": "gpx_harperdb_datasource",
+  "executable": "gpx_harper_datasource",
   "info": {
-    "description": "",
+    "description": "Data source plugin for Harper",
     "author": {
-      "name": "HarperDB"
+      "name": "Harper",
+      "url": "https://harpersystems.dev/"
     },
-    "keywords": ["datasource"],
+    "keywords": ["datasource", "harper", "analytics", "query"],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"

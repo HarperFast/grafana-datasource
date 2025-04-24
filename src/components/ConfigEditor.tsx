@@ -1,9 +1,9 @@
 import React, { ChangeEvent } from 'react';
 import { InlineField, Input, SecretInput } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { HDBDataSourceOptions, HDBSecureJsonData } from '../types';
+import { HarperDataSourceOptions, HarperSecureJsonData } from '../types';
 
-interface Props extends DataSourcePluginOptionsEditorProps<HDBDataSourceOptions, HDBSecureJsonData> {}
+interface Props extends DataSourcePluginOptionsEditorProps<HarperDataSourceOptions, HarperSecureJsonData> {}
 
 export function ConfigEditor(props: Props) {
 	const { onOptionsChange, options } = props;
