@@ -346,22 +346,6 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 					}}
 				/>
 			</InlineField>
-			<InlineField label="Start time">
-				<Input
-					id="analytics-start-time"
-					name="start-time"
-					value={queryAttrs?.from}
-					onChange={(e: ChangeEvent<HTMLInputElement>) => onQueryAttrsChange({ ...queryAttrs, from: e.target.value })}
-				/>
-			</InlineField>
-			<InlineField label="End time">
-				<Input
-					id="analytics-end-time"
-					name="end-time"
-					value={queryAttrs?.to}
-					onChange={(e: ChangeEvent<HTMLInputElement>) => onQueryAttrsChange({ ...queryAttrs, to: e.target.value })}
-				/>
-			</InlineField>
 		</Stack>
 	);
 }
