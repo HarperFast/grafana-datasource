@@ -5,12 +5,12 @@ go 1.23.5
 toolchain go1.23.6
 
 require (
-	github.com/HarperDB/sdk-go v0.0.0-20250404134346-1391f9c78aa2
+	github.com/HarperDB/sdk-go v0.0.0-20250423192344-4e44d216e2be
 	github.com/grafana/grafana-plugin-sdk-go v0.274.0
 )
 
 // Use this for local dev changes to the Harper Go SDK; change local path for your environment
-// replace github.com/HarperDB/sdk-go => /Users/wes/dev/sdk-go
+//replace github.com/HarperDB/sdk-go => /Users/wes/dev/sdk-go
 
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect

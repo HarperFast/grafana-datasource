@@ -4,6 +4,8 @@ github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/HarperDB/sdk-go v0.0.0-20250404134346-1391f9c78aa2 h1:YN6n0bBm/QgwIGIY4O/8exQNdCHH3+u6ZhpwnkPW3Kw=
 github.com/HarperDB/sdk-go v0.0.0-20250404134346-1391f9c78aa2/go.mod h1:aXT23/b9Zwoyhal32rU5myZXI+Wz02ZZ2I7CH+SAVt8=
+github.com/HarperDB/sdk-go v0.0.0-20250423192344-4e44d216e2be h1:9gA+vnZDmeupIOKZIGE5D1Qv5FWKhaVLDPAvRIhuFyc=
+github.com/HarperDB/sdk-go v0.0.0-20250423192344-4e44d216e2be/go.mod h1:U3SVYLzsS1S4abhWeHQUde1Fyh6p3utrhe1R+jS24MQ=
 github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=
 github.com/andybalholm/brotli v1.1.1/go.mod h1:05ib4cKhjx3OQYUY22hTVd34Bc8upXjOLL2rKwwZBoA=
 github.com/apache/arrow-go/v18 v18.0.1-0.20241212180703-82be143d7c30 h1:hXVi7QKuCQ0E8Yujfu9b0f0RnzZ72efpWvPnZgnJPrE=
