@@ -1,4 +1,4 @@
-# Grafana data source plugin for HarperDB
+# Grafana data source plugin for Harper
 
 ## Getting started
 
@@ -12,10 +12,10 @@ This plugin is not yet signed, so you'll need to [configure Grafana to load it a
 
 When you create a new Grafana datasource with this plugin,
 you'll need to give it the full URL (including port) to
-your HarperDB Operations API endpoint.
+your Harper Operations API endpoint.
 
 Then you'll need to give Grafana the username and password
-you'd like to use to access your HarperDB instance.
+you'd like to use to access your Harper instance.
 
 ## Development
 
