@@ -3,13 +3,15 @@ import {
 	InlineField,
 	Input,
 	Stack,
-	Select,
 	Alert,
 	MultiSelect,
 	Checkbox,
 	Label,
 	Button,
 	InlineLabel,
+	Combobox,
+	ComboboxOption,
+	MultiCombobox,
 } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
@@ -45,11 +47,20 @@ const sysInfoAttrs = [
 	'replication',
 ];
 
+function toSelectableValue(v: string): SelectableValue<string> {
+	return { label: v, value: v.toLowerCase().replaceAll(/\s+/g, '_') };
+}
+
 function toSelectableValues(vs: string[]): Array<SelectableValue<string>> {
-	return vs.map((v) => ({
-		label: v,
-		value: v.toLowerCase().replaceAll(/\s+/g, '_'),
-	}));
+	return vs.map(toSelectableValue);
+}
+
+function toComboboxOption(v: string): ComboboxOption<string> {
+	return { label: v, value: v };
+}
+
+function toComboboxOptions(vs: string[]): Array<ComboboxOption<string>> {
+	return vs.map(toComboboxOption);
 }
 
 const sysInfoOptions = toSelectableValues(sysInfoAttrs);
@@ -103,7 +114,7 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 	const condition = queryAttrs?.conditions?.[index];
 
 	const searchValueTypes = ['Auto', 'String', 'Number', 'Boolean', 'Number Array'];
-	const searchValueTypesOptions = toSelectableValues(searchValueTypes);
+	const searchValueTypesOptions = toComboboxOptions(searchValueTypes);
 
 	return (
 		<Stack gap={0} direction="row">
@@ -122,17 +133,15 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 				/>
 			</InlineField>
 			<InlineField label="Search type" style={{ marginLeft: '16px' }}>
-				<Select
+				<Combobox
 					id="search-by-conditions-search-type"
-					name="search-type"
-					options={toSelectableValues(searchTypes)}
+					options={toComboboxOptions(searchTypes)}
 					value={condition?.search_type}
 					onChange={(v) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
 						conditions[index] = { ...conditions[index], search_type: v.value };
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
-					required
 				/>
 			</InlineField>
 			<InlineField label="Search value" style={{ marginLeft: '16px' }}>
@@ -155,9 +164,8 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 				/>
 			</InlineField>
 			<InlineField label="Type">
-				<Select
+				<Combobox
 					id="search-by-conditions-search-value-type"
-					name="search-value-type"
 					options={searchValueTypesOptions}
 					value={condition?.searchValueType}
 					onChange={(v) => {
@@ -235,10 +243,10 @@ function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsCha
 				/>
 			</InlineField>
 			<InlineField label="Operator">
-				<Select
+				<Combobox
 					id="search-by-conditions-operator"
 					onChange={(v) => onQueryAttrsChange({ ...queryAttrs, operator: v.value })}
-					options={toSelectableValues(searchOperators)}
+					options={toComboboxOptions(searchOperators)}
 					value={queryAttrs?.operator}
 					placeholder="and"
 				/>
@@ -368,12 +376,12 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
 		onOperationChange(operations[0]);
 	}
 
-	const operationOptions = toSelectableValues(operations);
+	const operationOptions = toComboboxOptions(operations);
 
 	return (
 		<Stack gap={2} direction="column">
 			<InlineField label="Operation">
-				<Select
+				<Combobox
 					id="query-editor-operation"
 					options={operationOptions}
 					onChange={({ value }) => onOperationChange(value)}
