@@ -55,33 +55,33 @@ export function ConfigEditor(props: Props) {
 
 	return (
 		<>
-			<InlineField label="Operations API URL" labelWidth={20} interactive tooltip={'URL for HarperDB operations API'}>
+			<InlineField label="Operations API URL" labelWidth={20} interactive tooltip={'URL for Harper operations API'}>
 				<Input
 					required
 					id="config-editor-ops-api-url"
 					onChange={onOpsApiUrlChange}
 					value={jsonData.opsAPIURL}
-					placeholder="Enter the operations API URL for the HarperDB server, e.g. http://localhost:9925/"
+					placeholder="Enter the operations API URL for the Harper server, e.g. http://localhost:9925/"
 					width={80}
 				/>
 			</InlineField>
-			<InlineField label="Username" labelWidth={20} interactive tooltip={'HarperDB username'}>
+			<InlineField label="Username" labelWidth={20} interactive tooltip={'Harper username'}>
 				<Input
 					required
 					id="config-editor-username"
 					onChange={onUsernameChange}
 					value={jsonData.username}
-					placeholder="Enter your HarperDB username"
+					placeholder="Enter your Harper username"
 					width={40}
 				/>
 			</InlineField>
-			<InlineField label="Password" labelWidth={20} interactive tooltip={'HarperDB password'}>
+			<InlineField label="Password" labelWidth={20} interactive tooltip={'Harper password'}>
 				<SecretInput
 					required
 					id="config-editor-password"
 					isConfigured={secureJsonFields.password}
 					value={secureJsonData?.password}
-					placeholder="Enter your HarperDB password"
+					placeholder="Enter your Harper password"
 					width={40}
 					onReset={onResetPassword}
 					onChange={onPasswordChange}
