@@ -33,7 +33,7 @@ services:
       - grafana-harper
 
   harper:
-    image: harpersystems/harper:local
+    image: harpersystems/harper:4.6.0-alpha.1
     container_name: 'gds-harper'
     user: root
     volumes:
