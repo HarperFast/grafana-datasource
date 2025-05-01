@@ -1,7 +1,7 @@
 services:
   grafana:
     user: root
-    container_name: 'harper-grafana-datasource'
+    container_name: 'harper-datasource'
 
     build:
       context: .
