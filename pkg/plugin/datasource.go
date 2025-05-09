@@ -140,40 +140,39 @@ type queryModel[Q Query] struct {
 	QueryAttrs Q      `json:"queryAttrs"`
 }
 
+func appendVal[T any](dest map[string]*data.Field, fieldName string, val T, fieldNils map[string]int) {
+	if dest[fieldName] == nil {
+		dest[fieldName] = data.NewField(fieldName, nil, []*T{})
+		if fieldNils[fieldName] > 0 {
+			for _ = range fieldNils[fieldName] {
+				dest[fieldName].Append(nil)
+			}
+		}
+	}
+	dest[fieldName].Append(&val)
+}
+
 // flattenMap recursively converts nested Harper query result data structures
 // into flat Grafana fields by appending prefixes to the field names
 // reflecting the key path to that data in the original structure.
 func flattenMap(source map[string]any, dest map[string]*data.Field, namePrefix string) {
+	// keep track of initial nils so we can prepend those once we get a value that allows us to determine the field type
+	fieldNils := make(map[string]int)
+
 	for k, value := range source {
 		fieldName := namePrefix + k
 
 		switch v := value.(type) {
-		// TODO: Add more supported types
 		case string:
-			if dest[fieldName] == nil {
-				dest[fieldName] = data.NewField(fieldName, nil, []string{})
-			}
-			dest[fieldName].Append(v)
+			appendVal(dest, fieldName, v, fieldNils)
 		case bool:
-			if dest[fieldName] == nil {
-				dest[fieldName] = data.NewField(fieldName, nil, []bool{})
-			}
-			dest[fieldName].Append(v)
+			appendVal(dest, fieldName, v, fieldNils)
 		case float64:
-			if dest[fieldName] == nil {
-				dest[fieldName] = data.NewField(fieldName, nil, []float64{})
-			}
-			dest[fieldName].Append(v)
+			appendVal(dest, fieldName, v, fieldNils)
 		case int64:
-			if dest[fieldName] == nil {
-				dest[fieldName] = data.NewField(fieldName, nil, []int64{})
-			}
-			dest[fieldName].Append(v)
+			appendVal(dest, fieldName, v, fieldNils)
 		case time.Time:
-			if dest[fieldName] == nil {
-				dest[fieldName] = data.NewField(fieldName, nil, []time.Time{})
-			}
-			dest[fieldName].Append(v)
+			appendVal(dest, fieldName, v, fieldNils)
 		case map[string]any:
 			// For some reason neither this nor the []map[string]any cases
 			// match when we seemingly have those types in the data. So I
@@ -187,6 +186,12 @@ func flattenMap(source map[string]any, dest map[string]*data.Field, namePrefix s
 			//for idx, val := range v {
 			//	flattenMap(val, dest, fieldName+"."+strconv.Itoa(idx)+".")
 			//}
+		case nil:
+			if dest[fieldName] == nil {
+				fieldNils[fieldName] += 1
+			} else {
+				dest[fieldName].Append(nil)
+			}
 		default:
 			// Sooo... this is a little hack-y and I don't love it. But when I
 			// print out the type of maps and/or slices of maps coming from

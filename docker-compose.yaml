@@ -34,6 +34,9 @@ services:
 
   harper:
     image: harpersystems/harper:4.6.0-alpha.1
+    build:
+      context: ../harper
+      dockerfile: ../harper/utility/dev/Dockerfile
     container_name: 'gds-harper'
     user: root
     volumes:
