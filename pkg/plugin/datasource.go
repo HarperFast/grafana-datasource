@@ -261,13 +261,8 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		}
 		request := qm.QueryAttrs
 		log.DefaultLogger.Debug("Query", "request", request)
-
 		metric := request.Metric
-
 		getAttrs := request.Attributes
-		if len(getAttrs) == 0 {
-			getAttrs = []string{"*"}
-		}
 
 		results, err := d.harperClient.GetAnalytics(metric, getAttrs, request.From, request.To)
 		if err != nil {
