@@ -380,7 +380,10 @@ function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQ
 }
 
 export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
-	const operations = ['get_analytics', 'search_by_conditions'];
+	// Supporting search_by_conditions again would require adapting it to the new backend data ingestion scheme
+	// get_analytics uses in datasource.go.
+	// const operations = ['get_analytics', 'search_by_conditions'];
+	const operations = ['get_analytics'];
 
 	const onQueryAttrsChange = (attrs: QueryAttrs) => {
 		onChange({ ...query, queryAttrs: attrs });
@@ -401,7 +404,8 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
 
 	return (
 		<Stack gap={2} direction="column">
-			<InlineField label="Operation">
+			{operations.length > 1 ? (
+				<InlineField label="Operation">
 				<Combobox
 					id="query-editor-operation"
 					options={operationOptions}
@@ -409,7 +413,7 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
 					value={operation}
 					width={40}
 				/>
-			</InlineField>
+			</InlineField>) : null}
 			{operation ? (
 				<OpQueryEditor
 					operation={operation}
