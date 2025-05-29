@@ -7,7 +7,7 @@ import {
 	DEFAULT_QUERY,
 	SearchValue,
 	ListMetricsResponse,
-	DescribeMetricResponse
+	DescribeMetricResponse,
 } from './types';
 
 export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSourceOptions> {
@@ -63,29 +63,28 @@ export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSou
 		return { val: trimmedFieldVal, type: 'string' };
 	}
 
-	applyTemplateVariables(query: HarperQuery, scopedVars: ScopedVars) {
+	applyTemplateVariables(queryTemplate: HarperQuery, scopedVars: ScopedVars) {
 		const templateSrv = getTemplateSrv();
-		if (query.queryAttrs && 'conditions' in query.queryAttrs) {
-			const conditions = query.queryAttrs?.conditions?.map((c) => {
-				const searchFieldVal: any = templateSrv.replace(c.search_value?.val.toString(), scopedVars);
-				const searchValType = c.searchValueType ?? 'auto';
-				const searchVal = this.coerceValue(searchFieldVal, searchValType);
-				return { ...c, search_value: searchVal };
-			});
-			return {
-				...query,
-				queryAttrs: { ...query.queryAttrs, conditions },
-			};
-		} else if (query.queryAttrs && ('from' in query.queryAttrs || 'to' in query.queryAttrs)) {
-			const from = Number.parseInt(templateSrv.replace(query.queryAttrs?.from?.toString(), scopedVars), 10);
-			const to = Number.parseInt(templateSrv.replace(query.queryAttrs?.to?.toString(), scopedVars), 10);
-			return {
-				...query,
-				queryAttrs: { ...query.queryAttrs, from, to },
-			};
-		} else {
-			return query;
+		let query = { ...queryTemplate };
+		if (queryTemplate.queryAttrs) {
+			if ('conditions' in queryTemplate.queryAttrs) {
+				const conditions = queryTemplate.queryAttrs?.conditions
+					?.filter((c) => c.search_attribute && c.search_type && c.search_value?.val)
+					.map((c) => {
+						const searchFieldVal: any = templateSrv.replace(c.search_value?.val.toString(), scopedVars);
+						const searchValType = c.searchValueType ?? 'auto';
+						const searchVal = this.coerceValue(searchFieldVal, searchValType);
+						return { search_attribute: c.search_attribute, search_type: c.search_type, search_value: searchVal };
+					});
+				query.queryAttrs = { ...query.queryAttrs, conditions };
+			}
+			if ('from' in queryTemplate.queryAttrs || 'to' in queryTemplate.queryAttrs) {
+				const from = Number.parseInt(templateSrv.replace(queryTemplate.queryAttrs?.from?.toString(), scopedVars), 10);
+				const to = Number.parseInt(templateSrv.replace(queryTemplate.queryAttrs?.to?.toString(), scopedVars), 10);
+				query.queryAttrs = { ...query.queryAttrs, from, to };
+			}
 		}
+		return query;
 	}
 
 	isSearchByConditionsQuery(query: HarperQuery) {
@@ -115,26 +114,22 @@ export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSou
 	}
 
 	isGetAnalyticsQuery(query: HarperQuery) {
-		return (
-			query.operation === 'get_analytics' &&
-			!!query.queryAttrs &&
-			'metric' in query.queryAttrs
-		)
+		return query.operation === 'get_analytics' && !!query.queryAttrs && 'metric' in query.queryAttrs;
 	}
 
 	isReadyGetAnalyticsQuery(query: HarperQuery) {
 		if ('metric' in query.queryAttrs!) {
-			return (
-				query.queryAttrs.metric!.length > 0
-			);
+			return query.queryAttrs.metric!.length > 0;
 		}
 		return false;
 	}
 
 	filterQuery(query: HarperQuery) {
 		// prevent the query from being executed until it's minimally valid
-		return (this.isSearchByConditionsQuery(query) && this.isReadySearchByConditionsQuery(query))
-			|| (this.isGetAnalyticsQuery(query) && this.isReadyGetAnalyticsQuery(query));
+		return (
+			(this.isSearchByConditionsQuery(query) && this.isReadySearchByConditionsQuery(query)) ||
+			(this.isGetAnalyticsQuery(query) && this.isReadyGetAnalyticsQuery(query))
+		);
 	}
 
 	listMetrics(types?: string[]): Promise<ListMetricsResponse> {

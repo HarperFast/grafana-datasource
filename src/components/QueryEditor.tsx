@@ -39,15 +39,22 @@ function toComboboxOptions(vs: string[]): Array<ComboboxOption<string>> {
 	return vs.map(toComboboxOption);
 }
 
-interface SearchByConditionsQueryProps {
+interface QueryProps {
 	datasource: DataSource;
 	queryAttrs?: SearchByConditionsQueryAttrs;
 	onQueryAttrsChange: (attrs: SearchByConditionsQueryAttrs) => void;
 }
 
-interface ConditionFormProps extends SearchByConditionsQueryProps {
+interface ConditionFormProps extends QueryProps {
 	datasource: DataSource;
+	loadAttributes: (input: string) => Promise<Array<ComboboxOption<string>>>;
 	index: number;
+}
+
+interface ConditionsFormProps extends QueryProps {
+	onConditionAdd: () => void;
+	onConditionRemove: (index: number) => void;
+	loadAttributes: (input: string) => Promise<Array<ComboboxOption<string>>>;
 }
 
 const searchOperators = ['and', 'or'];
@@ -63,7 +70,7 @@ const searchTypes = [
 	'between',
 ];
 
-function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: ConditionFormProps) {
+function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttributes, index }: ConditionFormProps) {
 	const condition = queryAttrs?.conditions?.[index];
 
 	const searchValueTypes = ['Auto', 'String', 'Number', 'Boolean', 'Number Array'];
@@ -71,23 +78,25 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 
 	return (
 		<Stack gap={0} direction="row">
-			<InlineField label="Search attribute">
-				<Input
-					id="search-by-conditions-search-attr"
-					name="search-attr"
-					width={12}
-					required
+			<InlineField label="Attribute">
+				<Combobox
+					id={`conditions-search-attr-${index}`}
+					width="auto"
+					minWidth={12}
+					options={loadAttributes}
 					value={condition?.search_attribute}
-					onChange={(e: ChangeEvent<HTMLInputElement>) => {
+					onChange={(v: ComboboxOption<string>) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
-						conditions[index] = { ...conditions[index], search_attribute: e.target.value };
+						conditions[index] = { ...conditions[index], search_attribute: v.value };
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
 				/>
 			</InlineField>
-			<InlineField label="Search type" style={{ marginLeft: '16px' }}>
+			<InlineField label="Operator" style={{ marginLeft: '16px' }}>
 				<Combobox
-					id="search-by-conditions-search-type"
+					id={`conditions-search-type-${index}`}
+					width="auto"
+					minWidth={12}
 					options={toComboboxOptions(searchTypes)}
 					value={condition?.search_type}
 					onChange={(v) => {
@@ -97,11 +106,11 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 					}}
 				/>
 			</InlineField>
-			<InlineField label="Search value" style={{ marginLeft: '16px' }}>
+			<InlineField label="Value" style={{ marginLeft: '16px' }}>
 				<Input
-					id="search-by-conditions-search-value"
+					id={`conditions-search-value-${index}`}
 					name="search-value"
-					width={12}
+					width={20}
 					value={condition?.search_value?.val.toString()}
 					onChange={(e: ChangeEvent<HTMLInputElement>) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
@@ -118,7 +127,9 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 			</InlineField>
 			<InlineField label="Type">
 				<Combobox
-					id="search-by-conditions-search-value-type"
+					id={`conditions-search-value-type-${index}`}
+					width="auto"
+					minWidth={12}
 					options={searchValueTypesOptions}
 					value={condition?.searchValueType}
 					onChange={(v) => {
@@ -141,13 +152,66 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, index }: Co
 	);
 }
 
+function ConditionsForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttributes, onConditionAdd, onConditionRemove }: ConditionsFormProps) {
+	const conditions = queryAttrs?.conditions;
+	return (
+		<div>
+			{conditions?.map((condition, index) => {
+				return (
+					<div className="gf-form-inline" key={condition.id}>
+						<ConditionForm
+							datasource={datasource}
+							queryAttrs={queryAttrs}
+							onQueryAttrsChange={onQueryAttrsChange}
+							loadAttributes={loadAttributes}
+							index={index}
+						/>
+						{conditions?.length > 1 ? (
+							<Button
+								className="btn btn-danger btn-small"
+								icon="trash-alt"
+								variant="destructive"
+								fill="outline"
+								size="sm"
+								style={{ margin: '5px' }}
+								onClick={(e) => {
+									onConditionRemove(index);
+									e.preventDefault();
+								}}
+							/>
+						) : null}
+					</div>
+				);
+			})}
+
+			<div className="gf-form-inline">
+				<div className="gf-form">
+					<div className="gf-form gf-form--grow">
+						<Button
+							variant="secondary"
+							size="sm"
+							style={{ marginTop: '5px', marginLeft: '5px' }}
+							onClick={(e) => {
+								onConditionAdd();
+								e.preventDefault();
+							}}
+						>
+							+
+						</Button>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
 const defaultCondition = { searchValueType: 'auto' };
 
 function newCondition(id: number): Condition {
 	return { ...defaultCondition, id: `condition-${id}` };
 }
 
-function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsChange }: SearchByConditionsQueryProps) {
+function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsChange }: QueryProps) {
 	const nextConditionId = React.useRef((queryAttrs?.conditions?.length ?? 0) + 1);
 
 	const onConditionAdd = () => {
@@ -169,7 +233,6 @@ function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsCha
 	if (queryAttrs) {
 		queryAttrs.conditions ??= [newCondition(0)];
 	}
-	let conditions = queryAttrs?.conditions;
 
 	return (
 		<Stack gap={0} direction="column">
@@ -236,50 +299,13 @@ function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsCha
 				/>
 			</InlineField>
 			<Label style={{ marginTop: '25px' }}>Conditions</Label>
-			{conditions?.map((condition, index) => {
-				return (
-					<div className="gf-form-inline" key={condition.id}>
-						<ConditionForm
-							datasource={datasource}
-							queryAttrs={queryAttrs}
-							onQueryAttrsChange={onQueryAttrsChange}
-							index={index}
-						/>
-						{index > 0 ? (
-							<Button
-								className="btn btn-danger btn-small"
-								icon="trash-alt"
-								variant="destructive"
-								fill="outline"
-								size="sm"
-								style={{ margin: '5px' }}
-								onClick={(e) => {
-									onConditionRemove(index);
-									e.preventDefault();
-								}}
-							/>
-						) : null}
-					</div>
-				);
-			})}
-
-			<div className="gf-form-inline">
-				<div className="gf-form">
-					<div className="gf-form gf-form--grow">
-						<Button
-							variant="secondary"
-							size="sm"
-							style={{ marginTop: '5px', marginLeft: '5px' }}
-							onClick={(e) => {
-								onConditionAdd();
-								e.preventDefault();
-							}}
-						>
-							+
-						</Button>
-					</div>
-				</div>
-			</div>
+			<ConditionsForm
+				datasource={datasource}
+				queryAttrs={queryAttrs}
+				onQueryAttrsChange={onQueryAttrsChange}
+				onConditionAdd={onConditionAdd}
+				onConditionRemove={onConditionRemove}
+				/>
 		</Stack>
 	);
 }
@@ -321,6 +347,28 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 		[datasource, selectedMetric]
 	);
 
+	const nextConditionId = React.useRef((queryAttrs?.conditions?.length ?? 0) + 1);
+
+	const onConditionAdd = () => {
+		let conditions = [...(queryAttrs?.conditions || [])];
+		const condition = newCondition(nextConditionId.current++);
+		onQueryAttrsChange({ ...queryAttrs, conditions: [...conditions, condition] });
+	};
+
+	const onConditionRemove = (index: number) => {
+		let conditions = [...(queryAttrs?.conditions || [])];
+		conditions.splice(index, 1);
+		onQueryAttrsChange({ ...queryAttrs, conditions });
+	};
+
+	// ensure at least one blank condition form shows up
+	if (queryAttrs === undefined) {
+		onQueryAttrsChange({});
+	}
+	if (queryAttrs) {
+		queryAttrs.conditions ??= [newCondition(0)];
+	}
+
 	return (
 		<Stack gap={0} direction="column">
 			<InlineField label="Metric">
@@ -333,7 +381,7 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 					}}
 				/>
 			</InlineField>
-			<InlineField label="Attributes">
+			<InlineField label="Select attributes">
 				<MultiCombobox
 					id="analytics-attributes"
 					width="auto"
@@ -346,6 +394,15 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 					}}
 				/>
 			</InlineField>
+			<Label style={{ marginTop: '25px' }}>Conditions</Label>
+			<ConditionsForm
+				datasource={datasource}
+				queryAttrs={queryAttrs}
+				loadAttributes={loadAttributes}
+				onQueryAttrsChange={onQueryAttrsChange}
+				onConditionAdd={onConditionAdd}
+				onConditionRemove={onConditionRemove}
+			/>
 		</Stack>
 	);
 }
@@ -406,14 +463,15 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
 		<Stack gap={2} direction="column">
 			{operations.length > 1 ? (
 				<InlineField label="Operation">
-				<Combobox
-					id="query-editor-operation"
-					options={operationOptions}
-					onChange={({ value }) => onOperationChange(value)}
-					value={operation}
-					width={40}
-				/>
-			</InlineField>) : null}
+					<Combobox
+						id="query-editor-operation"
+						options={operationOptions}
+						onChange={({ value }) => onOperationChange(value)}
+						value={operation}
+						width={40}
+					/>
+				</InlineField>
+			) : null}
 			{operation ? (
 				<OpQueryEditor
 					operation={operation}
