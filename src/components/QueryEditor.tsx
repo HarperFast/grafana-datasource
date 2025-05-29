@@ -4,7 +4,6 @@ import {
 	Input,
 	Stack,
 	Alert,
-	Checkbox,
 	Label,
 	Button,
 	InlineLabel,
@@ -57,7 +56,6 @@ interface ConditionsFormProps extends QueryProps {
 	loadAttributes: (input: string) => Promise<Array<ComboboxOption<string>>>;
 }
 
-const searchOperators = ['and', 'or'];
 const searchTypes = [
 	'equals',
 	'contains',
@@ -211,105 +209,6 @@ function newCondition(id: number): Condition {
 	return { ...defaultCondition, id: `condition-${id}` };
 }
 
-function SearchByConditionsQueryEditor({ datasource, queryAttrs, onQueryAttrsChange }: QueryProps) {
-	const nextConditionId = React.useRef((queryAttrs?.conditions?.length ?? 0) + 1);
-
-	const onConditionAdd = () => {
-		let conditions = [...(queryAttrs?.conditions || [])];
-		const condition = newCondition(nextConditionId.current++);
-		onQueryAttrsChange({ ...queryAttrs, conditions: [...conditions, condition] });
-	};
-
-	const onConditionRemove = (index: number) => {
-		let conditions = [...(queryAttrs?.conditions || [])];
-		conditions.splice(index, 1);
-		onQueryAttrsChange({ ...queryAttrs, conditions });
-	};
-
-	// ensure at least one blank condition form shows up
-	if (queryAttrs === undefined) {
-		onQueryAttrsChange({});
-	}
-	if (queryAttrs) {
-		queryAttrs.conditions ??= [newCondition(0)];
-	}
-
-	return (
-		<Stack gap={0} direction="column">
-			<InlineField label="Database">
-				<Input
-					id="search-by-conditions-database"
-					name="database"
-					value={queryAttrs?.database}
-					placeholder="data"
-					onChange={(e: ChangeEvent<HTMLInputElement>) =>
-						onQueryAttrsChange({ ...queryAttrs, database: e.target.value })
-					}
-				/>
-			</InlineField>
-			<InlineField label="Table">
-				<Input
-					id="search-by-conditions-table"
-					name="table"
-					onChange={(e: ChangeEvent<HTMLInputElement>) => onQueryAttrsChange({ ...queryAttrs, table: e.target.value })}
-					value={queryAttrs?.table}
-					required
-				/>
-			</InlineField>
-			<InlineField label="Operator">
-				<Combobox
-					id="search-by-conditions-operator"
-					onChange={(v) => onQueryAttrsChange({ ...queryAttrs, operator: v.value })}
-					options={toComboboxOptions(searchOperators)}
-					value={queryAttrs?.operator}
-					placeholder="and"
-				/>
-			</InlineField>
-			<Stack gap={0}>
-				<InlineField label="Sort attribute">
-					<Input
-						id="search-by-conditions-sort-attr"
-						name="sort-attr"
-						value={queryAttrs?.sort?.attribute}
-						onChange={(e: ChangeEvent<HTMLInputElement>) =>
-							onQueryAttrsChange({ ...queryAttrs, sort: { ...queryAttrs?.sort, attribute: e.target.value } })
-						}
-					/>
-				</InlineField>
-				<InlineField label="Sort descending?">
-					<Checkbox
-						id="search-by-conditions-sort-descending"
-						name="sort-descending"
-						onChange={(e: ChangeEvent<HTMLInputElement>) =>
-							onQueryAttrsChange({ ...queryAttrs, sort: { ...queryAttrs?.sort, descending: e.target.checked } })
-						}
-					/>
-				</InlineField>
-				{/*Figure out how to support sort.next here*/}
-			</Stack>
-			<InlineField label="Get attributes" tooltip="Separate multiple attributes with commas (no spaces between)">
-				<Input
-					id="search-by-conditions-get-attributes"
-					name="get-attributes"
-					defaultValue="*"
-					value={queryAttrs?.attributes}
-					onChange={(e: ChangeEvent<HTMLInputElement>) =>
-						onQueryAttrsChange({ ...queryAttrs, attributes: e.target.value.split(',') })
-					}
-				/>
-			</InlineField>
-			<Label style={{ marginTop: '25px' }}>Conditions</Label>
-			<ConditionsForm
-				datasource={datasource}
-				queryAttrs={queryAttrs}
-				onQueryAttrsChange={onQueryAttrsChange}
-				onConditionAdd={onConditionAdd}
-				onConditionRemove={onConditionRemove}
-				/>
-		</Stack>
-	);
-}
-
 interface AnalyticsQueryProps {
 	datasource: DataSource;
 	queryAttrs?: AnalyticsQueryAttrs;
@@ -414,14 +313,6 @@ function OpQueryEditor({ operation, datasource, query, onQueryAttrsChange }: OpQ
 				<AnalyticsQueryEditor
 					datasource={datasource}
 					queryAttrs={query.queryAttrs as AnalyticsQueryAttrs}
-					onQueryAttrsChange={onQueryAttrsChange}
-				/>
-			);
-		case 'search_by_conditions':
-			return (
-				<SearchByConditionsQueryEditor
-					datasource={datasource}
-					queryAttrs={query.queryAttrs as SearchByConditionsQueryAttrs}
 					onQueryAttrsChange={onQueryAttrsChange}
 				/>
 			);
