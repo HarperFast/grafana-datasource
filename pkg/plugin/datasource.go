@@ -169,7 +169,6 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		request := qm.QueryAttrs
 		log.DefaultLogger.Debug("Query", "request", request)
 
-
 		req := harper.GetAnalyticsRequest{
 			Metric:        request.Metric,
 			GetAttributes: request.Attributes,
