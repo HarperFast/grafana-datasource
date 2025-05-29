@@ -253,7 +253,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			grafanaAnalytics.FieldTypes...,
 		).SetMeta(
 			&data.FrameMeta{
-				Type:        data.FrameTypeTimeSeriesLong,
+				Type:        data.FrameTypeTimeSeriesWide,
 				TypeVersion: data.FrameTypeVersion{0, 1},
 			},
 		).SetRefID(query.RefID)
