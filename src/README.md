@@ -28,12 +28,11 @@ Consider other [badges](https://shields.io/badges) as you feel appropriate for y
 
 ## Overview / Introduction
 
-This plugin allows using any Harper 4.6+ cluster as a Grafana data source.
+This plugin allows using a Harper 4.6+ cluster as a Grafana data source.
 
-It currently provides the following query forms:
+It currently provides the following query form(s):
 
 1. `get_analytics`: This Harper operation is useful for monitoring a Harper cluster in Grafana.
-1. `search_by_conditions`: This Harper search operation allows querying arbitrary data stored in Harper. [See here for more information.](https://docs.harperdb.io/docs/developers/operations-api/nosql-operations#search-by-conditions)
 
 <!--
 Consider including screenshots:
@@ -47,9 +46,9 @@ List any requirements or dependencies they may need to run the plugin.
 ## Getting Started
 
 1. Install the plugin
-1. Add a data source using the plugin
-1. Configure the full URL to your Harper cluster's operations API (defaults to port 9925)
-1. Configure a Harper username and password that has permission to read the appropriate data and/or analytics
+2. Add a data source using the plugin
+3. Configure the full URL to your Harper cluster's operations API (defaults to port 9925)
+4. Configure a Harper username and password that has permission to read the appropriate data and/or analytics
 
 <!--
 ## Documentation
