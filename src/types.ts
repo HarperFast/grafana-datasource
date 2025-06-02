@@ -13,7 +13,7 @@ export interface SearchValue {
 }
 
 export type Condition = {
-	id: string;
+	id?: string;
 	search_attribute?: string;
 	search_type?: string;
 	search_value?: SearchValue;
@@ -35,8 +35,9 @@ export interface SearchByConditionsQueryAttrs {
 export interface AnalyticsQueryAttrs {
 	metric?: string;
 	attributes?: string[];
-	from?: string;
-	to?: string;
+	from?: string | number;
+	to?: string | number;
+	conditions?: Condition[];
 }
 
 export type QueryAttrs = SearchByConditionsQueryAttrs | AnalyticsQueryAttrs;

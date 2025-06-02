@@ -112,20 +112,23 @@ type Condition struct {
 	Conditions      []*Condition `json:"conditions"`
 }
 
+type Conditions []*Condition
+
 type SearchByConditionsQuery struct {
-	Database   string      `json:"database"`
-	Table      string      `json:"table"`
-	Operator   string      `json:"operator"`
-	Sort       SortVal     `json:"sort"`
-	Attributes []string    `json:"attributes"`
-	Conditions []Condition `json:"conditions"`
+	Database   string     `json:"database"`
+	Table      string     `json:"table"`
+	Operator   string     `json:"operator"`
+	Sort       SortVal    `json:"sort"`
+	Attributes []string   `json:"attributes"`
+	Conditions Conditions `json:"conditions"`
 }
 
 type GetAnalyticsQuery struct {
-	Metric     string   `json:"metric"`
-	Attributes []string `json:"attributes"`
-	From       int64    `json:"from"`
-	To         int64    `json:"to"`
+	Metric     string     `json:"metric"`
+	Attributes []string   `json:"attributes"`
+	From       int64      `json:"from"`
+	To         int64      `json:"to"`
+	Conditions Conditions `json:"conditions"`
 }
 
 type Query interface {
@@ -169,11 +172,23 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		request := qm.QueryAttrs
 		log.DefaultLogger.Debug("Query", "request", request)
 
+		conditions := make(harper.SearchConditions, 0)
+		for _, c := range request.Conditions {
+			conditions = append(conditions, harper.SearchCondition{
+				Attribute: c.SearchAttribute,
+				Type:      c.SearchType,
+				Value:     c.SearchValue.Val,
+			})
+		}
+
 		req := harper.GetAnalyticsRequest{
 			Metric:        request.Metric,
 			GetAttributes: request.Attributes,
 			StartTime:     request.From,
 			EndTime:       request.To,
+		}
+		if len(conditions) > 0 {
+			req.Conditions = conditions
 		}
 
 		results, err := d.harperClient.GetAnalytics(req)
