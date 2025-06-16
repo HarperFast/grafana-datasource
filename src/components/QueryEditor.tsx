@@ -13,7 +13,7 @@ import {
 } from '@grafana/ui';
 import { QueryEditorProps } from '@grafana/data';
 import { DataSource } from '../datasource';
-import {
+import type {
 	AnalyticsQueryAttrs,
 	Condition,
 	HarperDataSourceOptions,
