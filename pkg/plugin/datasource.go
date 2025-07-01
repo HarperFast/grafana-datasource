@@ -283,6 +283,12 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			frame.AppendRow(row...)
 		}
 
+		if frame.Rows() == 0 {
+			// early return here so we don't get an error about being unable to convert to wide format
+			response.Frames = append(response.Frames, frame)
+			return response, nil
+		}
+
 		wideFrame, err := data.LongToWide(frame, &data.FillMissing{Mode: data.FillModeNull})
 		if err != nil {
 			return backend.DataResponse{}, fmt.Errorf("could not convert frame to wide format: '%w'", err)
