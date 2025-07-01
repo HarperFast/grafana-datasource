@@ -269,19 +269,43 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 		[selectedMetric, datasource]
 	);
 
+	const selectedAttrsValue = React.useMemo(() => {
+		return queryAttrs?.attributes
+			? toComboboxOptions(
+					queryAttrs.attributes.filter((attr) => {
+						const numericAttrs = attributes.filter((a) => a.type === 'number');
+						return numericAttrs.map((na) => na.name).includes(attr);
+					})
+			  )
+			: [];
+	}, [queryAttrs, attributes]);
+
+	const updateSelectedAttrs = React.useCallback(
+		(attrs: ComboboxOption[]) => {
+			const labelAttrs = attributes.filter((attr) => attr.type !== 'number');
+			let selectedAttrs: string[] = [];
+			if (attrs.length > 0) {
+				// ensure label attrs are always included
+				selectedAttrs = [...labelAttrs.map((a) => a.name), ...attrs.map((a) => a.value)];
+			}
+			onQueryAttrsChange({ ...queryAttrs, attributes: selectedAttrs });
+		},
+		[queryAttrs, attributes, onQueryAttrsChange]
+	);
+
 	const nextConditionId = React.useRef((queryAttrs?.conditions?.length ?? 0) + 1);
 
-	const onConditionAdd = () => {
+	const onConditionAdd = React.useCallback(() => {
 		let conditions = [...(queryAttrs?.conditions || [])];
 		const condition = newCondition(nextConditionId.current++);
 		onQueryAttrsChange({ ...queryAttrs, conditions: [...conditions, condition] });
-	};
+	}, [queryAttrs, onQueryAttrsChange]);
 
-	const onConditionRemove = (index: number) => {
+	const onConditionRemove = React.useCallback((index: number) => {
 		let conditions = [...(queryAttrs?.conditions || [])];
 		conditions.splice(index, 1);
 		onQueryAttrsChange({ ...queryAttrs, conditions });
-	};
+	}, [queryAttrs, onQueryAttrsChange]);
 
 	return (
 		<Stack gap={0} direction="column">
@@ -302,19 +326,8 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 					minWidth={25}
 					placeholder="*"
 					options={loadNumericAttributes}
-					value={queryAttrs?.attributes ? toComboboxOptions(queryAttrs.attributes.filter((attr) => {
-						const numericAttrs = attributes.filter((a) => a.type === 'number');
-						return numericAttrs.map((na) => na.name).includes(attr);
-					})) : []}
-					onChange={(vs: Array<ComboboxOption<string>>) => {
-						const labelAttrs = attributes.filter((attr) => attr.type !== 'number');
-						let selectedAttrs: string[] = [];
-						if (vs.length > 0) {
-							// ensure label attrs are always included
-							selectedAttrs = [...labelAttrs.map((a) => a.name), ...vs.map((v) => v.value)];
-						}
-						onQueryAttrsChange({ ...queryAttrs, attributes: selectedAttrs });
-					}}
+					value={selectedAttrsValue}
+					onChange={updateSelectedAttrs}
 				/>
 			</InlineField>
 			<Label style={{ marginTop: '25px' }}>Conditions</Label>
