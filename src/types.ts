@@ -68,6 +68,11 @@ export interface HarperSecureJsonData {
 
 export type ListMetricsResponse = string[];
 
+export interface MetricAttribute {
+	name: string;
+	type: string;
+}
+
 export interface DescribeMetricResponse {
-	attributes: string[];
+	attributes: MetricAttribute[];
 }

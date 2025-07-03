@@ -13,11 +13,12 @@ import {
 } from '@grafana/ui';
 import { QueryEditorProps } from '@grafana/data';
 import { DataSource } from '../datasource';
-import {
+import type {
 	AnalyticsQueryAttrs,
 	Condition,
 	HarperDataSourceOptions,
 	HarperQuery,
+	MetricAttribute,
 	QueryAttrs,
 	SearchByConditionsQueryAttrs,
 } from '../types';
@@ -150,7 +151,14 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttribu
 	);
 }
 
-function ConditionsForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttributes, onConditionAdd, onConditionRemove }: ConditionsFormProps) {
+function ConditionsForm({
+	datasource,
+	queryAttrs,
+	onQueryAttrsChange,
+	loadAttributes,
+	onConditionAdd,
+	onConditionRemove,
+}: ConditionsFormProps) {
 	const conditions = queryAttrs?.conditions;
 	return (
 		<div>
@@ -164,20 +172,18 @@ function ConditionsForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttrib
 							loadAttributes={loadAttributes}
 							index={index}
 						/>
-						{conditions?.length > 1 ? (
-							<Button
-								className="btn btn-danger btn-small"
-								icon="trash-alt"
-								variant="destructive"
-								fill="outline"
-								size="sm"
-								style={{ margin: '5px' }}
-								onClick={(e) => {
-									onConditionRemove(index);
-									e.preventDefault();
-								}}
-							/>
-						) : null}
+						<Button
+							className="btn btn-danger btn-small"
+							icon="trash-alt"
+							variant="destructive"
+							fill="outline"
+							size="sm"
+							style={{ margin: '5px' }}
+							onClick={(e) => {
+								onConditionRemove(index);
+								e.preventDefault();
+							}}
+						/>
 					</div>
 				);
 			})}
@@ -194,7 +200,7 @@ function ConditionsForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttrib
 								e.preventDefault();
 							}}
 						>
-							+
+							Add Condition
 						</Button>
 					</div>
 				</div>
@@ -234,39 +240,72 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 		[datasource]
 	);
 
+	const [attributes, setAttributes] = React.useState<MetricAttribute[]>([]);
+
 	const loadAttributes = React.useCallback(
 		async (input: string) => {
 			if (selectedMetric) {
 				// TODO: Filter attrs based on `input`
 				const desc = await datasource.describeMetric(selectedMetric);
-				return toComboboxOptions(desc.attributes);
+				setAttributes(desc.attributes);
+				return toComboboxOptions(desc.attributes.map((a) => a.name));
 			}
 			return [];
 		},
 		[datasource, selectedMetric]
 	);
 
+	const loadNumericAttributes = React.useCallback(
+		async (input: string) => {
+			if (selectedMetric) {
+				const desc = await datasource.describeMetric(selectedMetric);
+				const attrs = desc.attributes;
+				setAttributes(attrs);
+				const numericAttrs = attrs.filter((a) => a.type === 'number');
+				return toComboboxOptions(numericAttrs.map((a) => a.name));
+			}
+			return [];
+		},
+		[selectedMetric, datasource]
+	);
+
+	const selectedAttrsValue = React.useMemo(() => {
+		return queryAttrs?.attributes
+			? toComboboxOptions(
+					queryAttrs.attributes.filter((attr) => {
+						const numericAttrs = attributes.filter((a) => a.type === 'number');
+						return numericAttrs.map((na) => na.name).includes(attr);
+					})
+			  )
+			: [];
+	}, [queryAttrs, attributes]);
+
+	const updateSelectedAttrs = React.useCallback(
+		(attrs: ComboboxOption[]) => {
+			const labelAttrs = attributes.filter((attr) => attr.type !== 'number');
+			let selectedAttrs: string[] = [];
+			if (attrs.length > 0) {
+				// ensure label attrs are always included
+				selectedAttrs = [...labelAttrs.map((a) => a.name), ...attrs.map((a) => a.value)];
+			}
+			onQueryAttrsChange({ ...queryAttrs, attributes: selectedAttrs });
+		},
+		[queryAttrs, attributes, onQueryAttrsChange]
+	);
+
 	const nextConditionId = React.useRef((queryAttrs?.conditions?.length ?? 0) + 1);
 
-	const onConditionAdd = () => {
+	const onConditionAdd = React.useCallback(() => {
 		let conditions = [...(queryAttrs?.conditions || [])];
 		const condition = newCondition(nextConditionId.current++);
 		onQueryAttrsChange({ ...queryAttrs, conditions: [...conditions, condition] });
-	};
+	}, [queryAttrs, onQueryAttrsChange]);
 
-	const onConditionRemove = (index: number) => {
+	const onConditionRemove = React.useCallback((index: number) => {
 		let conditions = [...(queryAttrs?.conditions || [])];
 		conditions.splice(index, 1);
 		onQueryAttrsChange({ ...queryAttrs, conditions });
-	};
-
-	// ensure at least one blank condition form shows up
-	if (queryAttrs === undefined) {
-		onQueryAttrsChange({});
-	}
-	if (queryAttrs) {
-		queryAttrs.conditions ??= [newCondition(0)];
-	}
+	}, [queryAttrs, onQueryAttrsChange]);
 
 	return (
 		<Stack gap={0} direction="column">
@@ -286,11 +325,9 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 					width="auto"
 					minWidth={25}
 					placeholder="*"
-					options={loadAttributes}
-					value={queryAttrs?.attributes ? toComboboxOptions(queryAttrs.attributes) : []}
-					onChange={(vs: Array<ComboboxOption<string>>) => {
-						onQueryAttrsChange({ ...queryAttrs, attributes: vs.map((v) => v.value) });
-					}}
+					options={loadNumericAttributes}
+					value={selectedAttrsValue}
+					onChange={updateSelectedAttrs}
 				/>
 			</InlineField>
 			<Label style={{ marginTop: '25px' }}>Conditions</Label>

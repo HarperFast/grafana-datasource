@@ -204,7 +204,9 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		allFields := make(map[string]bool)
 		for _, result := range results {
 			for k := range result {
-				allFields[k] = true
+				if k != "metric" {
+					allFields[k] = true
+				}
 			}
 		}
 
@@ -267,7 +269,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			grafanaAnalytics.FieldTypes...,
 		).SetMeta(
 			&data.FrameMeta{
-				Type:        data.FrameTypeTimeSeriesWide,
+				Type:        data.FrameTypeTimeSeriesLong,
 				TypeVersion: data.FrameTypeVersion{0, 1},
 			},
 		).SetRefID(query.RefID)
@@ -281,10 +283,12 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			frame.AppendRow(row...)
 		}
 
-		st, _ := frame.StringTable(-1, -1)
-		log.DefaultLogger.Debug("Grafana analytics", "table", st)
+		wideFrame, err := data.LongToWide(frame, &data.FillMissing{Mode: data.FillModeNull})
+		if err != nil {
+			return backend.DataResponse{}, fmt.Errorf("could not convert frame to wide format: '%w'", err)
+		}
 
-		response.Frames = append(response.Frames, frame)
+		response.Frames = append(response.Frames, wideFrame)
 		return response, nil
 	default:
 		return backend.DataResponse{}, errors.New("unsupported Harper operation: " + qo.Operation)
