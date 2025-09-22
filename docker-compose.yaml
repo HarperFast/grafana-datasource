@@ -33,7 +33,7 @@ services:
       - grafana-harper
 
   harper:
-    image: harpersystems/harper:4.6.0
+    image: harpersystems/harper:4.6.9
     build:
       context: ../harper
       dockerfile: ../harper/utility/dev/Dockerfile
