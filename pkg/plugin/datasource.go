@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	harper "github.com/HarperDB/sdk-go"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"maps"
 	"reflect"
 	"slices"
 	"sort"
 	"time"
+
+	harper "github.com/HarperDB/sdk-go"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -105,11 +106,11 @@ type SearchValue struct {
 }
 
 type Condition struct {
-	SearchAttribute string       `json:"search_attribute"`
-	SearchType      string       `json:"search_type"`
-	SearchValue     SearchValue  `json:"search_value"`
-	Operator        string       `json:"operator"`
-	Conditions      []*Condition `json:"conditions"`
+	Attribute  string       `json:"attribute"`
+	Comparator string       `json:"comparator"`
+	Value      SearchValue  `json:"value"`
+	Operator   string       `json:"operator"`
+	Conditions []*Condition `json:"conditions"`
 }
 
 type Conditions []*Condition
@@ -175,9 +176,9 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		conditions := make(harper.SearchConditions, 0)
 		for _, c := range request.Conditions {
 			conditions = append(conditions, harper.SearchCondition{
-				Attribute: c.SearchAttribute,
-				Type:      c.SearchType,
-				Value:     c.SearchValue.Val,
+				Attribute:  c.Attribute,
+				Comparator: c.Comparator,
+				Value:      c.Value.Val,
 			})
 		}
 

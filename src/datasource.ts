@@ -69,12 +69,12 @@ export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSou
 		if (queryTemplate.queryAttrs) {
 			if ('conditions' in queryTemplate.queryAttrs) {
 				const conditions = queryTemplate.queryAttrs?.conditions
-					?.filter((c) => c.search_attribute && c.search_type && c.search_value?.val)
+					?.filter((c) => c.attribute && c.comparator && c.value?.val)
 					.map((c) => {
-						const searchFieldVal: any = templateSrv.replace(c.search_value?.val.toString(), scopedVars);
+						const searchFieldVal: any = templateSrv.replace(c.value?.val.toString(), scopedVars);
 						const searchValType = c.searchValueType ?? 'auto';
 						const searchVal = this.coerceValue(searchFieldVal, searchValType);
-						return { search_attribute: c.search_attribute, search_type: c.search_type, search_value: searchVal };
+						return { attribute: c.attribute, comparator: c.comparator, value: searchVal };
 					});
 				query.queryAttrs = { ...query.queryAttrs, conditions };
 			}
@@ -103,11 +103,11 @@ export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSou
 		if ('conditions' in query.queryAttrs!) {
 			return (
 				query.queryAttrs.conditions!.length > 0 &&
-				!!query.queryAttrs.conditions![0].search_attribute &&
-				query.queryAttrs.conditions![0].search_attribute.length > 0 &&
-				!!query.queryAttrs.conditions![0].search_type &&
-				query.queryAttrs.conditions![0].search_type.length > 0 &&
-				!!query.queryAttrs.conditions![0].search_value?.val
+				!!query.queryAttrs.conditions![0].attribute &&
+				query.queryAttrs.conditions![0].attribute.length > 0 &&
+				!!query.queryAttrs.conditions![0].comparator &&
+				query.queryAttrs.conditions![0].comparator.length > 0 &&
+				!!query.queryAttrs.conditions![0].value?.val
 			);
 		}
 		return false;

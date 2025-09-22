@@ -83,24 +83,24 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttribu
 					width="auto"
 					minWidth={12}
 					options={loadAttributes}
-					value={condition?.search_attribute}
+					value={condition?.attribute}
 					onChange={(v: ComboboxOption<string>) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
-						conditions[index] = { ...conditions[index], search_attribute: v.value };
+						conditions[index] = { ...conditions[index], attribute: v.value };
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
 				/>
 			</InlineField>
-			<InlineField label="Operator" style={{ marginLeft: '16px' }}>
+			<InlineField label="Comparator" style={{ marginLeft: '16px' }}>
 				<Combobox
 					id={`conditions-search-type-${index}`}
 					width="auto"
 					minWidth={12}
 					options={toComboboxOptions(searchTypes)}
-					value={condition?.search_type}
+					value={condition?.comparator}
 					onChange={(v) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
-						conditions[index] = { ...conditions[index], search_type: v.value };
+						conditions[index] = { ...conditions[index], comparator: v.value };
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
 				/>
@@ -110,14 +110,14 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttribu
 					id={`conditions-search-value-${index}`}
 					name="search-value"
 					width={20}
-					value={condition?.search_value?.val.toString()}
+					value={condition?.value?.val.toString()}
 					onChange={(e: ChangeEvent<HTMLInputElement>) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
 						const svt = condition?.searchValueType ?? 'auto';
 						const coercedVal = datasource.coerceValue(e.target.value, svt);
 						conditions[index] = {
 							...conditions[index],
-							search_value: coercedVal,
+							value: coercedVal,
 						};
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
@@ -136,15 +136,15 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttribu
 						conditions[index] = {
 							...conditions[index],
 							searchValueType: v.value,
-							search_value: datasource.coerceValue(condition?.search_value?.val.toString() ?? '', v.value ?? 'string'),
+							value: datasource.coerceValue(condition?.value?.val.toString() ?? '', v.value ?? 'string'),
 						};
 						onQueryAttrsChange({ ...queryAttrs, conditions });
 					}}
 				/>
 			</InlineField>
-			{(condition?.searchValueType === 'auto' || condition?.searchValueType !== condition?.search_value?.type) &&
-			condition?.search_value ? (
-				<InlineLabel width="auto">{condition.search_value.type}</InlineLabel>
+			{(condition?.searchValueType === 'auto' || condition?.searchValueType !== condition?.value?.type) &&
+			condition?.value ? (
+				<InlineLabel width="auto">{condition.value.type}</InlineLabel>
 			) : null}
 			{/*TODO: support nested conditions here*/}
 		</Stack>
@@ -301,11 +301,14 @@ function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: An
 		onQueryAttrsChange({ ...queryAttrs, conditions: [...conditions, condition] });
 	}, [queryAttrs, onQueryAttrsChange]);
 
-	const onConditionRemove = React.useCallback((index: number) => {
-		let conditions = [...(queryAttrs?.conditions || [])];
-		conditions.splice(index, 1);
-		onQueryAttrsChange({ ...queryAttrs, conditions });
-	}, [queryAttrs, onQueryAttrsChange]);
+	const onConditionRemove = React.useCallback(
+		(index: number) => {
+			let conditions = [...(queryAttrs?.conditions || [])];
+			conditions.splice(index, 1);
+			onQueryAttrsChange({ ...queryAttrs, conditions });
+		},
+		[queryAttrs, onQueryAttrsChange]
+	);
 
 	return (
 		<Stack gap={0} direction="column">

@@ -5,7 +5,7 @@ type Sort = {
 	attribute?: string;
 	descending?: boolean;
 	next?: Sort;
-}
+};
 
 export interface SearchValue {
 	val: string | number | number[] | boolean;
@@ -14,13 +14,13 @@ export interface SearchValue {
 
 export type Condition = {
 	id?: string;
-	search_attribute?: string;
-	search_type?: string;
-	search_value?: SearchValue;
+	attribute?: string;
+	comparator?: string;
+	value?: SearchValue;
 	searchValueType?: string;
 	operator?: string;
 	conditions?: Condition[];
-}
+};
 
 export interface SearchByConditionsQueryAttrs {
 	database?: string;
