@@ -2,7 +2,7 @@
 
 ## Getting started
 
-Requires Grafana 7.0 or higher.
+Requires Grafana 10.4.0 or higher.
 
 Clone this repo into your `grafana/plugins` directory.
 
