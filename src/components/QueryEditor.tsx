@@ -57,8 +57,9 @@ interface ConditionsFormProps extends QueryProps {
 	loadAttributes: (input: string) => Promise<Array<ComboboxOption<string>>>;
 }
 
-const searchTypes = [
+const comparators = [
 	'equals',
+	'not_equal',
 	'contains',
 	'starts_with',
 	'ends_with',
@@ -93,10 +94,10 @@ function ConditionForm({ datasource, queryAttrs, onQueryAttrsChange, loadAttribu
 			</InlineField>
 			<InlineField label="Comparator" style={{ marginLeft: '16px' }}>
 				<Combobox
-					id={`conditions-search-type-${index}`}
+					id={`conditions-comparator-${index}`}
 					width="auto"
 					minWidth={12}
-					options={toComboboxOptions(searchTypes)}
+					options={toComboboxOptions(comparators)}
 					value={condition?.comparator}
 					onChange={(v) => {
 						const conditions = [...(queryAttrs?.conditions || [])];
