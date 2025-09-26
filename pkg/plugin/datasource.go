@@ -229,7 +229,9 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 					log.DefaultLogger.Debug("Header not found in result; assigning nil", "header", header)
 					row[i] = nil
 				} else {
-					log.DefaultLogger.Debug("Row", "header", header, "val", val, "type", reflect.TypeOf(val).String())
+					if val != nil {
+						log.DefaultLogger.Debug("Row", "header", header, "val", val, "type", reflect.TypeOf(val).String())
+					}
 					switch v := val.(type) {
 					case string:
 						if grafanaAnalytics.FieldTypes[i] == data.FieldTypeUnknown {
@@ -258,6 +260,9 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 						row[i] = &v
 					case nil:
 						log.DefaultLogger.Debug("Assigning nil", "header", header)
+						if grafanaAnalytics.FieldTypes[i] == data.FieldTypeUnknown {
+							grafanaAnalytics.FieldTypes[i] = data.FieldTypeNullableString
+						}
 						row[i] = nil
 					}
 				}
