@@ -19,7 +19,16 @@
       "large": "img/logo.svg"
     },
     "links": [],
-    "screenshots": [],
+    "screenshots": [
+      {
+        "path": "img/connection1.png",
+        "name": "Connection configuration"
+      },
+      {
+        "path": "img/dashboard1.png",
+        "name": "Example Harper analytics dashboard"
+      }
+    ],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
