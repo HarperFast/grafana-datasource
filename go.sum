@@ -2,12 +2,6 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/HarperDB/sdk-go v0.0.0-20250616174745-e54bbebd5ba0 h1:OuuJ8JjYlINZrryK3Pp5/R4d7Prrkg+OAp/j2ot8ZBA=
-github.com/HarperDB/sdk-go v0.0.0-20250616174745-e54bbebd5ba0/go.mod h1:U3SVYLzsS1S4abhWeHQUde1Fyh6p3utrhe1R+jS24MQ=
-github.com/HarperDB/sdk-go v0.0.0-20250917210228-c77ae7103436 h1:c2NNB0tYzGXzznEtff/Is1WYCku+7fpFoUVGiIjXAuI=
-github.com/HarperDB/sdk-go v0.0.0-20250917210228-c77ae7103436/go.mod h1:U3SVYLzsS1S4abhWeHQUde1Fyh6p3utrhe1R+jS24MQ=
-github.com/HarperDB/sdk-go v0.0.0-20250917211014-dbe8317c04eb h1:n6k/NVHznSk5DUMXD29r7dpiVeovvb99BdneVfxNx9M=
-github.com/HarperDB/sdk-go v0.0.0-20250917211014-dbe8317c04eb/go.mod h1:U3SVYLzsS1S4abhWeHQUde1Fyh6p3utrhe1R+jS24MQ=
 github.com/HarperDB/sdk-go v0.0.0-20250919160759-08caf0a5f108 h1:QgexisqRCNl7t1iAM8U7xZQ+Np1kT/inewVQqu5KT9w=
 github.com/HarperDB/sdk-go v0.0.0-20250919160759-08caf0a5f108/go.mod h1:U3SVYLzsS1S4abhWeHQUde1Fyh6p3utrhe1R+jS24MQ=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
