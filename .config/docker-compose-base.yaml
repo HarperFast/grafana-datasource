@@ -1,13 +1,13 @@
 services:
   grafana:
     user: root
-    container_name: 'harper-datasource'
+    container_name: 'harperdb-datasource'
 
     build:
       context: .
       args:
         grafana_image: ${GRAFANA_IMAGE:-grafana-enterprise}
-        grafana_version: ${GRAFANA_VERSION:-12.1.1}
+        grafana_version: ${GRAFANA_VERSION:-12.2.0}
         development: ${DEVELOPMENT:-false}
         anonymous_auth_enabled: ${ANONYMOUS_AUTH_ENABLED:-true}
     ports:
@@ -19,13 +19,13 @@ services:
     cap_add:
       - SYS_PTRACE
     volumes:
-      - ../dist:/var/lib/grafana/plugins/harper-datasource
+      - ../dist:/var/lib/grafana/plugins/harperdb-datasource
       - ../provisioning:/etc/grafana/provisioning
-      - ..:/root/harper-datasource
+      - ..:/root/harperdb-datasource
 
     environment:
       NODE_ENV: development
-      GF_LOG_FILTERS: plugin.harper-datasource:debug
+      GF_LOG_FILTERS: plugin.harperdb-datasource:debug
       GF_LOG_LEVEL: debug
       GF_DATAPROXY_LOGGING: 1
-      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: harper-datasource
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: harperdb-datasource
