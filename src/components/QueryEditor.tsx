@@ -176,6 +176,7 @@ function ConditionsForm({
 						<Button
 							className="btn btn-danger btn-small"
 							icon="trash-alt"
+							aria-label="Remove condition"
 							variant="destructive"
 							fill="outline"
 							size="sm"
