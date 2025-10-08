@@ -11,13 +11,12 @@ import (
 )
 
 type metricsHandler struct {
-	datasource          *Datasource
-	builtinMetricsCache []harper.ListMetricsResult
-	logger              log.Logger
+	datasource *Datasource
+	logger     log.Logger
 }
 
 func newMetricsHandler(datasource *Datasource) *metricsHandler {
-	return &metricsHandler{datasource: datasource, builtinMetricsCache: []harper.ListMetricsResult{}}
+	return &metricsHandler{datasource: datasource}
 }
 
 func (d *Datasource) newResourceHandler() backend.CallResourceHandler {
@@ -31,25 +30,15 @@ func (d *Datasource) newResourceHandler() backend.CallResourceHandler {
 }
 
 func (mh *metricsHandler) listBuiltinMetrics() ([]harper.ListMetricsResult, error) {
-	if len(mh.builtinMetricsCache) > 0 {
-		return mh.builtinMetricsCache, nil
-	}
-
 	metrics, err := mh.datasource.harperClient.ListMetrics([]harper.MetricType{harper.MetricTypeBuiltin})
 	if err != nil {
 		return nil, err
 	}
 
-	mh.builtinMetricsCache = metrics
-
 	return metrics, nil
 }
 
 func (mh *metricsHandler) listCustomMetrics() ([]harper.ListMetricsResult, error) {
-	// TODO: Decide if / how we want to cache these too
-	// These are more resource intensive to query, but they also change a LOT
-	// more often than the builtins
-
 	metrics, err := mh.datasource.harperClient.ListMetrics([]harper.MetricType{harper.MetricTypeCustom})
 	if err != nil {
 		return nil, err
