@@ -12,7 +12,6 @@ import (
 
 type metricsHandler struct {
 	datasource *Datasource
-	logger     log.Logger
 }
 
 func newMetricsHandler(datasource *Datasource) *metricsHandler {
@@ -76,11 +75,9 @@ func (mh *metricsHandler) describeMetric(metric string) (*harper.DescribeMetricR
 }
 
 func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mh.logger = log.DefaultLogger.FromContext(r.Context())
-
 	metric := r.PathValue("metric")
-	mh.logger.Debug("metricsHandler request", "urlPathValue", metric)
-	mh.logger.Debug("metricsHandler request", "urlParams", r.URL.Query())
+	log.DefaultLogger.Debug("metricsHandler request", "urlPathValue", metric)
+	log.DefaultLogger.Debug("metricsHandler request", "urlParams", r.URL.Query())
 
 	if r.Method != http.MethodGet {
 		http.NotFound(w, r)
@@ -92,27 +89,27 @@ func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		metricTypes := r.URL.Query()["types"]
 		metrics, err := mh.listMetrics(metricTypes)
 		if err != nil {
-			mh.logger.Error("failed to list metrics", "error", err)
+			log.DefaultLogger.Error("failed to list metrics", "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		jsonResp, err = json.Marshal(metrics)
 		if err != nil {
-			mh.logger.Error("error marshaling metrics to JSON", "error", err)
+			log.DefaultLogger.Error("error marshaling metrics to JSON", "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
 		metricAttrs, err := mh.describeMetric(metric)
 		if err != nil {
-			mh.logger.Error("failed to describe metric", "metric", metric, "error", err)
+			log.DefaultLogger.Error("failed to describe metric", "metric", metric, "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		jsonResp, err = json.Marshal(metricAttrs)
 		if err != nil {
-			mh.logger.Error("error marshaling metric attributes to JSON", "metric", metric, "error", err)
+			log.DefaultLogger.Error("error marshaling metric attributes to JSON", "metric", metric, "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -122,6 +119,6 @@ func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	_, err := w.Write(jsonResp)
 	if err != nil {
-		mh.logger.Error("error writing response", "error", err)
+		log.DefaultLogger.Error("error writing response", "error", err)
 	}
 }
