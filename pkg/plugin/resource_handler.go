@@ -134,9 +134,5 @@ func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, err := w.Write(jsonResp)
 	if err != nil {
 		mh.logger.Error("error writing response", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
