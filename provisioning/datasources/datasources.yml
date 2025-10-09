@@ -2,7 +2,7 @@ apiVersion: 1
 
 datasources:
   - name: 'harper-datasource'
-    type: 'harperdb-datasource'
+    type: 'harperdb-harperdb-datasource'
     access: proxy
     isDefault: true
     orgId: 1

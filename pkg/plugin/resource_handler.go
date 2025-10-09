@@ -11,13 +11,11 @@ import (
 )
 
 type metricsHandler struct {
-	datasource          *Datasource
-	builtinMetricsCache []harper.ListMetricsResult
-	logger              log.Logger
+	datasource *Datasource
 }
 
 func newMetricsHandler(datasource *Datasource) *metricsHandler {
-	return &metricsHandler{datasource: datasource, builtinMetricsCache: []harper.ListMetricsResult{}}
+	return &metricsHandler{datasource: datasource}
 }
 
 func (d *Datasource) newResourceHandler() backend.CallResourceHandler {
@@ -31,25 +29,15 @@ func (d *Datasource) newResourceHandler() backend.CallResourceHandler {
 }
 
 func (mh *metricsHandler) listBuiltinMetrics() ([]harper.ListMetricsResult, error) {
-	if len(mh.builtinMetricsCache) > 0 {
-		return mh.builtinMetricsCache, nil
-	}
-
 	metrics, err := mh.datasource.harperClient.ListMetrics([]harper.MetricType{harper.MetricTypeBuiltin})
 	if err != nil {
 		return nil, err
 	}
 
-	mh.builtinMetricsCache = metrics
-
 	return metrics, nil
 }
 
 func (mh *metricsHandler) listCustomMetrics() ([]harper.ListMetricsResult, error) {
-	// TODO: Decide if / how we want to cache these too
-	// These are more resource intensive to query, but they also change a LOT
-	// more often than the builtins
-
 	metrics, err := mh.datasource.harperClient.ListMetrics([]harper.MetricType{harper.MetricTypeCustom})
 	if err != nil {
 		return nil, err
@@ -87,11 +75,9 @@ func (mh *metricsHandler) describeMetric(metric string) (*harper.DescribeMetricR
 }
 
 func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mh.logger = log.DefaultLogger.FromContext(r.Context())
-
 	metric := r.PathValue("metric")
-	mh.logger.Debug("metricsHandler request", "urlPathValue", metric)
-	mh.logger.Debug("metricsHandler request", "urlParams", r.URL.Query())
+	log.DefaultLogger.Debug("metricsHandler request", "urlPathValue", metric)
+	log.DefaultLogger.Debug("metricsHandler request", "urlParams", r.URL.Query())
 
 	if r.Method != http.MethodGet {
 		http.NotFound(w, r)
@@ -103,27 +89,27 @@ func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		metricTypes := r.URL.Query()["types"]
 		metrics, err := mh.listMetrics(metricTypes)
 		if err != nil {
-			mh.logger.Error("failed to list metrics", "error", err)
+			log.DefaultLogger.Error("failed to list metrics", "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		jsonResp, err = json.Marshal(metrics)
 		if err != nil {
-			mh.logger.Error("error marshaling metrics to JSON", "error", err)
+			log.DefaultLogger.Error("error marshaling metrics to JSON", "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
 		metricAttrs, err := mh.describeMetric(metric)
 		if err != nil {
-			mh.logger.Error("failed to describe metric", "metric", metric, "error", err)
+			log.DefaultLogger.Error("failed to describe metric", "metric", metric, "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		jsonResp, err = json.Marshal(metricAttrs)
 		if err != nil {
-			mh.logger.Error("error marshaling metric attributes to JSON", "metric", metric, "error", err)
+			log.DefaultLogger.Error("error marshaling metric attributes to JSON", "metric", metric, "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -133,10 +119,6 @@ func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	_, err := w.Write(jsonResp)
 	if err != nil {
-		mh.logger.Error("error writing response", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		log.DefaultLogger.Error("error writing response", "error", err)
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
