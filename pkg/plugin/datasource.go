@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"reflect"
 	"slices"
 	"sort"
 	"time"
@@ -14,7 +13,6 @@ import (
 	harper "github.com/HarperDB/sdk-go"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
@@ -76,8 +74,6 @@ func (d *Datasource) Dispose() {}
 // The QueryDataResponse contains a map of RefID to the response for each query, and each response
 // contains Frames ([]*Frame).
 func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	log.DefaultLogger.Info("QueryData", "request", req)
-
 	// create response struct
 	response := backend.NewQueryDataResponse()
 
@@ -161,8 +157,6 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		return backend.DataResponse{}, fmt.Errorf("could not unmarshal Grafana query JSON: '%s': '%w'", query.JSON, err)
 	}
 
-	log.DefaultLogger.Debug("Query", "operation", qo)
-
 	switch qo.Operation {
 	case "get_analytics":
 		var qm queryModel[GetAnalyticsQuery]
@@ -171,7 +165,6 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			return backend.DataResponse{}, fmt.Errorf("could not unmarshal get_analytics query JSON: '%s': '%w'", query.JSON, err)
 		}
 		request := qm.QueryAttrs
-		log.DefaultLogger.Debug("Query", "request", request)
 
 		conditions := make(harper.SearchConditions, 0)
 		for _, c := range request.Conditions {
@@ -196,8 +189,6 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		if err != nil {
 			return backend.DataResponse{}, fmt.Errorf("could not query Harper analytics: '%s': '%w'", query.JSON, err)
 		}
-
-		log.DefaultLogger.Debug("Get analytics query results", "results", results)
 
 		// Collect the superset of all fields in the results.
 		// Grafana gets very cranky if any rows have a different set of fields (columns), so we have to make sure they
@@ -226,12 +217,8 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			for i, header := range grafanaAnalytics.Headers {
 				val, ok := result[header]
 				if !ok {
-					log.DefaultLogger.Debug("Header not found in result; assigning nil", "header", header)
 					row[i] = nil
 				} else {
-					if val != nil {
-						log.DefaultLogger.Debug("Row", "header", header, "val", val, "type", reflect.TypeOf(val).String())
-					}
 					switch v := val.(type) {
 					case string:
 						if grafanaAnalytics.FieldTypes[i] == data.FieldTypeUnknown {
@@ -259,7 +246,6 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 						}
 						row[i] = &v
 					case nil:
-						log.DefaultLogger.Debug("Assigning nil", "header", header)
 						if grafanaAnalytics.FieldTypes[i] == data.FieldTypeUnknown {
 							grafanaAnalytics.FieldTypes[i] = data.FieldTypeNullableString
 						}
