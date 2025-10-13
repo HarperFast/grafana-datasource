@@ -19,7 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: grafana/plugin-actions/build-plugin@release
-#     Uncomment once we're allowed to sign the plugin
-#        with:
-#          policy_token: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
-#          attestation: true
+        with:
+          policy_token: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
+          attestation: true
