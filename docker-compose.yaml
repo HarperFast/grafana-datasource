@@ -24,10 +24,10 @@ services:
 
     environment:
       NODE_ENV: development
-      GF_LOG_FILTERS: plugin.harperdb-harperdb-datasource:debug
+      GF_LOG_FILTERS: plugin.harperfast-harper-datasource:debug
       GF_LOG_LEVEL: debug
       GF_DATAPROXY_LOGGING: 1
-      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: harperdb-harperdb-datasource
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: harperfast-harper-datasource
 
     networks:
       - grafana-harper
