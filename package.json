@@ -79,5 +79,5 @@
     "tslib": "2.8.1",
     "@grafana/i18n": "^12.2.0"
   },
-  "packageManager": "npm@10.9.4"
+  "packageManager": "npm@11.6.2"
 }
