@@ -1,36 +1,19 @@
 services:
   grafana:
-    user: root
     container_name: 'harper-grafana-datasource'
 
     build:
-      context: ./.config
       args:
-        grafana_image: ${GRAFANA_IMAGE:-grafana-enterprise}
         grafana_version: ${GRAFANA_VERSION:-12.1.1}
-        development: ${DEVELOPMENT:-false}
-    ports:
-      - 3000:3000/tcp
-      - 2345:2345/tcp # delve
-    security_opt:
-      - 'apparmor:unconfined'
-      - 'seccomp:unconfined'
-    cap_add:
-      - SYS_PTRACE
     volumes:
       - ./dist:/var/lib/grafana/plugins/harper-datasource
-      - ./provisioning:/etc/grafana/provisioning
       - .:/root/harper-datasource
-
-    environment:
-      NODE_ENV: development
-      GF_LOG_FILTERS: plugin.harperfast-harper-datasource:debug
-      GF_LOG_LEVEL: debug
-      GF_DATAPROXY_LOGGING: 1
-      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: harperfast-harper-datasource
 
     networks:
       - grafana-harper
+    extends:
+      file: .config/docker-compose-base.yaml
+      service: grafana
 
   harper:
     image: harpersystems/harper:4.6.11
