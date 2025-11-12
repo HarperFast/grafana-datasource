@@ -5,5 +5,11 @@
   ],
   "prConcurrentLimit": 2,
   "minimumReleaseAge": "3 days",
-  "internalChecksFilter": "strict"
+  "internalChecksFilter": "strict",
+  "packageRules": [
+    {
+      "matchPackageNames": ["react", "react-dom"],
+      "allowedVersions": "<19"
+    }
+  ]
 }
