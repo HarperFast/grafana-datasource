@@ -2,5 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ]
+  ],
+  "prConcurrentLimit": 2,
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict"
 }
