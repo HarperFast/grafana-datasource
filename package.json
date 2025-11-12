@@ -41,7 +41,6 @@
 		"eslint-config-prettier": "^10.0.0",
 		"eslint-plugin-jsdoc": "^61.0.0",
 		"eslint-plugin-react": "^7.37.5",
-		"eslint-plugin-react-hooks": "^5.2.0",
 		"eslint-webpack-plugin": "^5.0.0",
 		"fork-ts-checker-webpack-plugin": "^9.0.0",
 		"glob": "^11.0.0",
