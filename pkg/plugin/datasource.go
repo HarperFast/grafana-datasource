@@ -10,7 +10,7 @@ import (
 	"sort"
 	"time"
 
-	harper "github.com/HarperDB/sdk-go"
+	harper "github.com/HarperFast/sdk-go"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"

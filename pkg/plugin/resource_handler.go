@@ -2,7 +2,7 @@ package plugin
 
 import (
 	"encoding/json"
-	harper "github.com/HarperDB/sdk-go"
+	harper "github.com/HarperFast/sdk-go"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
