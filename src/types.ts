@@ -66,6 +66,13 @@ export interface HarperSecureJsonData {
 	password?: string;
 }
 
+export type MetricType = 'builtin' | 'custom';
+
+export interface ListMetricsRequest {
+	types: MetricType[];
+	customMetricsWindow?: number;
+}
+
 export type ListMetricsResponse = string[];
 
 export interface MetricAttribute {

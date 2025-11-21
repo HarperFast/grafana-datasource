@@ -8,6 +8,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 	"net/http"
 	"slices"
+	"strconv"
 )
 
 type metricsHandler struct {
@@ -28,7 +29,7 @@ func (d *Datasource) newResourceHandler() backend.CallResourceHandler {
 	return httpadapter.New(mux)
 }
 
-func (mh *metricsHandler) listMetrics(metricTypes []string) ([]harper.ListMetricsResult, error) {
+func (mh *metricsHandler) listMetrics(metricTypes []string, customMetricsWindow int64) ([]harper.ListMetricsResult, error) {
 	var metrics []harper.ListMetricsResult
 	var err error
 
@@ -45,7 +46,16 @@ func (mh *metricsHandler) listMetrics(metricTypes []string) ([]harper.ListMetric
 		}
 	}
 
-	metrics, err = mh.datasource.harperClient.ListMetrics(harperMetricTypes)
+	metricsRequest := harper.ListMetricsRequest{
+		MetricTypes: harperMetricTypes,
+	}
+
+	if customMetricsWindow > 0 {
+		log.DefaultLogger.Debug("listMetrics request", "customMetricsWindow", customMetricsWindow)
+		metricsRequest.CustomMetricsWindow = customMetricsWindow
+	}
+
+	metrics, err = mh.datasource.harperClient.ListMetrics(metricsRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +80,11 @@ func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var jsonResp []byte
 	if metric == "" {
 		metricTypes := r.URL.Query()["types"]
-		metrics, err := mh.listMetrics(metricTypes)
+		customMetricsWindow, err := strconv.ParseInt(r.URL.Query()["customMetricsWindow"][0], 10, 64)
+		if err != nil {
+			customMetricsWindow = 0
+		}
+		metrics, err := mh.listMetrics(metricTypes, customMetricsWindow)
 		if err != nil {
 			log.DefaultLogger.Error("failed to list metrics", "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

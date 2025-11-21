@@ -8,6 +8,8 @@ import {
 	SearchValue,
 	ListMetricsResponse,
 	DescribeMetricResponse,
+	ListMetricsRequest,
+	MetricType,
 } from './types';
 
 export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSourceOptions> {
@@ -132,11 +134,17 @@ export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSou
 		);
 	}
 
-	listMetrics(types?: string[]): Promise<ListMetricsResponse> {
-		let params = {};
+	listMetrics(types?: MetricType[]): Promise<ListMetricsResponse> {
+		let params: ListMetricsRequest = { types: [] };
 		if (types) {
 			params = { types };
 		}
+		const templateSrv = getTemplateSrv();
+		const from = Number(templateSrv.replace('${__from}'));
+		if (from && !Number.isNaN(from)) {
+			params.customMetricsWindow = Date.now() - from;
+		}
+		console.log('listMetrics params:', params);
 		return this.getResource('/metrics', params);
 	}
 
