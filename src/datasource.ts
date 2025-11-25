@@ -144,7 +144,6 @@ export class DataSource extends DataSourceWithBackend<HarperQuery, HarperDataSou
 		if (from && !Number.isNaN(from)) {
 			params.customMetricsWindow = Date.now() - from;
 		}
-		console.log('listMetrics params:', params);
 		return this.getResource('/metrics', params);
 	}
 
