@@ -2,12 +2,13 @@ package plugin
 
 import (
 	"encoding/json"
-	harper "github.com/HarperDB/sdk-go"
+	harper "github.com/HarperFast/sdk-go"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 	"net/http"
 	"slices"
+	"strconv"
 )
 
 type metricsHandler struct {
@@ -28,43 +29,35 @@ func (d *Datasource) newResourceHandler() backend.CallResourceHandler {
 	return httpadapter.New(mux)
 }
 
-func (mh *metricsHandler) listBuiltinMetrics() ([]harper.ListMetricsResult, error) {
-	metrics, err := mh.datasource.harperClient.ListMetrics([]harper.MetricType{harper.MetricTypeBuiltin})
-	if err != nil {
-		return nil, err
-	}
-
-	return metrics, nil
-}
-
-func (mh *metricsHandler) listCustomMetrics() ([]harper.ListMetricsResult, error) {
-	metrics, err := mh.datasource.harperClient.ListMetrics([]harper.MetricType{harper.MetricTypeCustom})
-	if err != nil {
-		return nil, err
-	}
-
-	return metrics, nil
-}
-
-func (mh *metricsHandler) listMetrics(metricTypes []string) ([]harper.ListMetricsResult, error) {
+func (mh *metricsHandler) listMetrics(metricTypes []string, customMetricsWindow int64) ([]harper.ListMetricsResult, error) {
 	var metrics []harper.ListMetricsResult
 	var err error
 
-	if len(metricTypes) == 0 || slices.Contains(metricTypes, "builtin") {
-		metrics, err = mh.listBuiltinMetrics()
-		if err != nil {
-			return nil, err
-		}
+	var harperMetricTypes []harper.MetricType
+
+	if len(metricTypes) == 0 {
+		harperMetricTypes = []harper.MetricType{harper.MetricTypeBuiltin, harper.MetricTypeCustom}
 	} else {
-		metrics = make([]harper.ListMetricsResult, 0)
+		if slices.Contains(metricTypes, "builtin") {
+			harperMetricTypes = append(harperMetricTypes, harper.MetricTypeBuiltin)
+		}
+		if slices.Contains(metricTypes, "custom") {
+			harperMetricTypes = append(harperMetricTypes, harper.MetricTypeCustom)
+		}
 	}
 
-	if len(metricTypes) == 0 || slices.Contains(metricTypes, "custom") {
-		customMetrics, err := mh.listCustomMetrics()
-		if err != nil {
-			return nil, err
-		}
-		metrics = append(metrics, customMetrics...)
+	metricsRequest := harper.ListMetricsRequest{
+		MetricTypes: harperMetricTypes,
+	}
+
+	if customMetricsWindow > 0 {
+		log.DefaultLogger.Debug("listMetrics request", "customMetricsWindow", customMetricsWindow)
+		metricsRequest.CustomMetricsWindow = customMetricsWindow
+	}
+
+	metrics, err = mh.datasource.harperClient.ListMetrics(metricsRequest)
+	if err != nil {
+		return nil, err
 	}
 
 	return metrics, nil
@@ -87,7 +80,11 @@ func (mh *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var jsonResp []byte
 	if metric == "" {
 		metricTypes := r.URL.Query()["types"]
-		metrics, err := mh.listMetrics(metricTypes)
+		customMetricsWindow, err := strconv.ParseInt(r.URL.Query()["customMetricsWindow"][0], 10, 64)
+		if err != nil {
+			customMetricsWindow = 0
+		}
+		metrics, err := mh.listMetrics(metricTypes, customMetricsWindow)
 		if err != nil {
 			log.DefaultLogger.Error("failed to list metrics", "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
