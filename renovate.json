@@ -4,7 +4,7 @@
     "config:recommended"
   ],
   "prConcurrentLimit": 2,
-  "minimumReleaseAge": "3 days",
+  "minimumReleaseAge": "7 days",
   "internalChecksFilter": "strict",
   "packageRules": [
     {
