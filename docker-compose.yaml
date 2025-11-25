@@ -4,7 +4,7 @@ services:
 
     build:
       args:
-        grafana_version: ${GRAFANA_VERSION:-12.1.1}
+        grafana_version: ${GRAFANA_VERSION:-12.3.0}
     volumes:
       - ./dist:/var/lib/grafana/plugins/harper-datasource
       - .:/root/harper-datasource
@@ -16,7 +16,7 @@ services:
       service: grafana
 
   harper:
-    image: harpersystems/harper:4.6.11
+    image: harpersystems/harper:4.6.20
     build:
       context: ../harper-main
       dockerfile: ../harper-main/utility/dev/Dockerfile
