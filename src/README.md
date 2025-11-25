@@ -28,7 +28,7 @@ Consider other [badges](https://shields.io/badges) as you feel appropriate for y
 
 ## Overview / Introduction
 
-This plugin allows using a Harper 4.6+ cluster as a Grafana data source.
+This plugin allows using a Harper 4.6+ (Harper 4.6.19+ is highly recommended) cluster as a Grafana data source.
 
 It currently provides the following query form(s):
 
