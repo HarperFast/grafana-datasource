@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"maps"
 	"slices"
 	"sort"
@@ -33,7 +34,7 @@ type Settings struct {
 	Username  string `json:"username"`
 }
 
-func NewDatasource(_ context.Context, s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func NewDatasource(ctx context.Context, s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	var settings Settings
 	err := json.Unmarshal(s.JSONData, &settings)
 	if err != nil {
@@ -45,7 +46,15 @@ func NewDatasource(_ context.Context, s backend.DataSourceInstanceSettings) (ins
 		return backend.DataResponse{}, fmt.Errorf("no password found for Harper connection")
 	}
 
-	client := harper.NewClient(settings.OpsAPIURL, settings.Username, password)
+	opts, err := s.HTTPClientOptions(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get HTTP client options: %w", err)
+	}
+	httpClient, err := httpclient.New(opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
+	}
+	client := harper.NewClientWithHTTPClient(httpClient, settings.OpsAPIURL, settings.Username, password)
 
 	ds := &Datasource{
 		settings:     settings,
