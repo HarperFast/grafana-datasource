@@ -3,12 +3,12 @@ module github.com/HarperFast/grafana-datasource
 go 1.24.6
 
 require (
-	github.com/HarperFast/sdk-go v0.0.0-20251125181512-eaaf33c04530
+	github.com/HarperFast/sdk-go v0.0.0-20251202192903-7bbb413548de
 	github.com/grafana/grafana-plugin-sdk-go v0.283.0
 )
 
 // Use this for local dev changes to the Harper Go SDK; change local path for your environment
-//replace github.com/HarperDB/sdk-go => /Users/wes/dev/sdk-go
+//replace github.com/HarperFast/sdk-go => /Users/wes/dev/sdk-go
 
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
