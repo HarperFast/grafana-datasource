@@ -6,6 +6,8 @@ github.com/HarperFast/sdk-go v0.0.0-20251125181512-eaaf33c04530 h1:FsceIqaBgOtUn
 github.com/HarperFast/sdk-go v0.0.0-20251125181512-eaaf33c04530/go.mod h1:3UUnkgDXQhSE0if8SIVcznXAjevUi6NrnAKx98c2UtQ=
 github.com/HarperFast/sdk-go v0.0.0-20251126214702-0955117c72d3 h1:liJObw6LmkYFvYE4Sy4LyEzdp1yDQDVvbUQi5Mr99HI=
 github.com/HarperFast/sdk-go v0.0.0-20251126214702-0955117c72d3/go.mod h1:3UUnkgDXQhSE0if8SIVcznXAjevUi6NrnAKx98c2UtQ=
+github.com/HarperFast/sdk-go v0.0.0-20251202192903-7bbb413548de h1:DE9roUryZDgFjz6VSPEANCWd8o08xODSenTKKi7tEas=
+github.com/HarperFast/sdk-go v0.0.0-20251202192903-7bbb413548de/go.mod h1:3UUnkgDXQhSE0if8SIVcznXAjevUi6NrnAKx98c2UtQ=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
 github.com/andybalholm/brotli v1.2.0/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
 github.com/apache/arrow-go/v18 v18.4.1 h1:q/jVkBWCJOB9reDgaIZIdruLQUb1kbkvOnOFezVH1C4=
