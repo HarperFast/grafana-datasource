@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Added example dashboard
+
 ## 0.1.2
 
 - Added ability to trace HTTP requests for better debugging plugin issues.
