@@ -18,12 +18,13 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": null,
   "links": [],
   "panels": [
     {
       "datasource": {
-        "type": "harper-datasource",
-        "uid": "PBDF592D9F839F20A"
+        "type": "harperfast-harper-datasource",
+        "uid": "${harperfastdatasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -108,8 +109,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "harper-datasource",
-            "uid": "PBDF592D9F839F20A"
+            "type": "harperfast-harper-datasource",
+            "uid": "${harperfastdatasource}"
           },
           "operation": "get_analytics",
           "queryAttrs": {
@@ -145,8 +146,8 @@
     },
     {
       "datasource": {
-        "type": "harper-datasource",
-        "uid": "PBDF592D9F839F20A"
+        "type": "harperfast-harper-datasource",
+        "uid": "${harperfastdatasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -228,8 +229,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "harper-datasource",
-            "uid": "PBDF592D9F839F20A"
+            "type": "harperfast-harper-datasource",
+            "uid": "${harperfastdatasource}"
           },
           "operation": "get_analytics",
           "queryAttrs": {
@@ -251,8 +252,8 @@
     },
     {
       "datasource": {
-        "type": "harper-datasource",
-        "uid": "PBDF592D9F839F20A"
+        "type": "harperfast-harper-datasource",
+        "uid": "${harperfastdatasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -333,8 +334,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "harper-datasource",
-            "uid": "PBDF592D9F839F20A"
+            "type": "harperfast-harper-datasource",
+            "uid": "${harperfastdatasource}"
           },
           "operation": "get_analytics",
           "queryAttrs": {
@@ -368,8 +369,8 @@
     },
     {
       "datasource": {
-        "type": "harper-datasource",
-        "uid": "PBDF592D9F839F20A"
+        "type": "harperfast-harper-datasource",
+        "uid": "${harperfastdatasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -451,8 +452,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "harper-datasource",
-            "uid": "PBDF592D9F839F20A"
+            "type": "harperfast-harper-datasource",
+            "uid": "${harperfastdatasource}"
           },
           "operation": "get_analytics",
           "queryAttrs": {
@@ -475,8 +476,8 @@
     },
     {
       "datasource": {
-        "type": "harper-datasource",
-        "uid": "PBDF592D9F839F20A"
+        "type": "harperfast-harper-datasource",
+        "uid": "${harperfastdatasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -558,8 +559,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "harper-datasource",
-            "uid": "PBDF592D9F839F20A"
+            "type": "harperfast-harper-datasource",
+            "uid": "${harperfastdatasource}"
           },
           "operation": "get_analytics",
           "queryAttrs": {
@@ -582,8 +583,8 @@
     },
     {
       "datasource": {
-        "type": "harper-datasource",
-        "uid": "PBDF592D9F839F20A"
+        "type": "harperfast-harper-datasource",
+        "uid": "${harperfastdatasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -701,7 +702,20 @@
   "schemaVersion": 41,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "harperfast-harper-datasource",
+          "value": "af7b4bjntvgu8d"
+        },
+        "name": "harperfastdatasource",
+        "options": [],
+        "query": "harperfast-harper-datasource",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-6h",
