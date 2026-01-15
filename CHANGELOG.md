@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- Make datasource a variable in example dashboard so it can actually be used 😂
+
 ## 0.1.3
 
 - Added example dashboard
