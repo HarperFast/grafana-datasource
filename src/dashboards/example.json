@@ -704,10 +704,6 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "harperfast-harper-datasource",
-          "value": "af7b4bjntvgu8d"
-        },
         "name": "harperfastdatasource",
         "options": [],
         "query": "harperfast-harper-datasource",
