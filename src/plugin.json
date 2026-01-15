@@ -13,7 +13,12 @@
       "name": "Harper",
       "url": "https://harpersystems.dev/"
     },
-    "keywords": ["datasource", "harper", "analytics", "query"],
+    "keywords": [
+      "datasource",
+      "harper",
+      "analytics",
+      "query"
+    ],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"

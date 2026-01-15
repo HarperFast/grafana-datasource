@@ -1,14 +1,12 @@
 services:
   grafana:
     container_name: 'harper-grafana-datasource'
-
     build:
       args:
         grafana_version: ${GRAFANA_VERSION:-12.3.0}
     volumes:
       - ./dist:/var/lib/grafana/plugins/harper-datasource
       - .:/root/harper-datasource
-
     networks:
       - grafana-harper
     extends:
