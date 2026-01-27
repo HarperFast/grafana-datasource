@@ -57,6 +57,7 @@ export const DEFAULT_QUERY: Partial<HarperQuery> = {
 export interface HarperDataSourceOptions extends DataSourceJsonData {
 	opsAPIURL?: string;
 	username?: string;
+	tlsSkipVerify?: boolean;
 }
 
 /**

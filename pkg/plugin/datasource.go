@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"maps"
 	"slices"
 	"sort"
@@ -13,6 +12,7 @@ import (
 
 	harper "github.com/HarperFast/sdk-go"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
@@ -30,8 +30,9 @@ var (
 )
 
 type Settings struct {
-	OpsAPIURL string `json:"opsAPIURL"`
-	Username  string `json:"username"`
+	OpsAPIURL     string `json:"opsAPIURL"`
+	Username      string `json:"username"`
+	TLSSkipVerify bool   `json:"tlsSkipVerify"`
 }
 
 func NewDatasource(ctx context.Context, s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
