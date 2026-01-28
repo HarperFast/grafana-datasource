@@ -8,9 +8,10 @@ import (
 )
 
 type PluginSettings struct {
-	OpsAPIURL string                `json:"opsAPIURL"`
-	Username  string                `json:"username"`
-	Secrets   *SecretPluginSettings `json:"-"`
+	OpsAPIURL     string                `json:"opsAPIURL"`
+	Username      string                `json:"username"`
+	Secrets       *SecretPluginSettings `json:"-"`
+	TLSSkipVerify bool                  `json:"tlsSkipVerify"`
 }
 
 type SecretPluginSettings struct {
