@@ -190,6 +190,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			GetAttributes: request.Attributes,
 			StartTime:     request.From,
 			EndTime:       request.To,
+			CoalesceTime:  true,
 		}
 		if len(conditions) > 0 {
 			req.Conditions = conditions

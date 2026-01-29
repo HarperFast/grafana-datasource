@@ -3,7 +3,7 @@ module github.com/HarperFast/grafana-datasource
 go 1.25.5
 
 require (
-	github.com/HarperFast/sdk-go v0.0.0-20251202192903-7bbb413548de
+	github.com/HarperFast/sdk-go v0.0.0-20260128222850-607a56164b1a
 	github.com/grafana/grafana-plugin-sdk-go v0.285.0
 )
 
