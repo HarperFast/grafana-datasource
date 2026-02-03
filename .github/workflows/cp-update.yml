@@ -20,4 +20,5 @@ jobs:
     steps:
       - uses: grafana/plugin-actions/create-plugin-update@main
         with:
+          node-version: 24
           token: ${{ secrets.GRAFANA_CREATE_PLUGIN_PERSONAL_ACCESS_TOKEN }}
