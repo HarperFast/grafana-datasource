@@ -16,7 +16,7 @@ services:
       service: grafana
 
   harper:
-    image: harpersystems/harper:4.6.20
+    image: harpersystems/harper:4.7.18
     build:
       context: ../harper-main
       dockerfile: ../harper-main/utility/dev/Dockerfile
