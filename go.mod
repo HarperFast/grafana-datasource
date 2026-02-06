@@ -3,7 +3,7 @@ module github.com/HarperFast/grafana-datasource
 go 1.25.5
 
 require (
-	github.com/HarperFast/sdk-go v0.0.0-20251202192903-7bbb413548de
+	github.com/HarperFast/sdk-go v0.0.0-20260206180038-10b7043c9437
 	github.com/grafana/grafana-plugin-sdk-go v0.285.0
 )
 
@@ -22,7 +22,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-resty/resty/v2 v2.16.5 // indirect
+	github.com/go-resty/resty/v2 v2.17.1 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
