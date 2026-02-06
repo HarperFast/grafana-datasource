@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Spiffied up the config form a bit
+- Added support skipping TLS verification in the Harper connection
+- Started passing the `coalesce_time=true` param to Harper's `get_analytics` API to get connected line graphs from replicated analytics
+
 ## 0.1.4
 
 - Make datasource a variable in example dashboard so it can actually be used 😂
