@@ -9,6 +9,10 @@ services:
       - ./dist:/var/lib/grafana/plugins/harper-datasource
       - .:/root/harper-datasource
 
+    environment:
+      # The "what's new" splash modal (Grafana 13.0+) covers the page and breaks e2e tests
+      GF_FEATURE_TOGGLES_splashScreen: 'false'
+
     networks:
       - grafana-harper
     extends:
