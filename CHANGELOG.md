@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.6
+
+- Fixed plugin failing to load on Grafana 13+ (React 19) with `Cannot read properties of undefined (reading 'ReactCurrentOwner')`. The React JSX runtime is now provided by Grafana instead of being bundled with the plugin.
+- Minimum Grafana version is now 11.6.11 / 12.0.10 / 12.1.7 / 12.2.5 (the versions that provide the shared JSX runtime).
+
 ## 0.1.5
 
 - Spiffied up the config form a bit

@@ -1,6 +1,6 @@
 {
 	"name": "harper-datasource",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"scripts": {
 		"build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
 		"dev": "webpack -w -c ./.config/webpack/webpack.config.ts --env development",
@@ -20,7 +20,7 @@
 		"@grafana/eslint-config": "^9.0.0",
 		"@grafana/plugin-e2e": "^3.0.0",
 		"@grafana/tsconfig": "^2.0.0",
-		"@playwright/test": "^1.52.0",
+		"@playwright/test": "^1.60.0",
 		"@stylistic/eslint-plugin-ts": "^4.0.0",
 		"@swc/core": "^1.10.7",
 		"@swc/helpers": "^0.5.0",
