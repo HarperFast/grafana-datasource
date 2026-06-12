@@ -1,51 +1,46 @@
 {
-  "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
-  "type": "datasource",
-  "name": "Harper",
-  "id": "harperfast-harper-datasource",
-  "metrics": true,
-  "backend": true,
-  "alerting": true,
-  "executable": "gpx_harper_datasource",
-  "info": {
-    "description": "Data source plugin for Harper",
-    "author": {
-      "name": "Harper",
-      "url": "https://harpersystems.dev/"
-    },
-    "keywords": [
-      "datasource",
-      "harper",
-      "analytics",
-      "query"
-    ],
-    "logos": {
-      "small": "img/logo.svg",
-      "large": "img/logo.svg"
-    },
-    "links": [],
-    "screenshots": [
-      {
-        "path": "img/connection1.png",
-        "name": "Connection configuration"
-      },
-      {
-        "path": "img/dashboard1.png",
-        "name": "Example Harper analytics dashboard"
-      }
-    ],
-    "version": "%VERSION%",
-    "updated": "%TODAY%"
-  },
-  "dependencies": {
-    "grafanaDependency": ">=10.4.0",
-    "plugins": []
-  },
-  "includes": [
-    {
-      "name": "example",
-      "path": "dashboards/example.json",
-      "type": "dashboard"
-    }
-  ]
+	"$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
+	"type": "datasource",
+	"name": "Harper",
+	"id": "harperfast-harper-datasource",
+	"metrics": true,
+	"backend": true,
+	"alerting": true,
+	"executable": "gpx_harper_datasource",
+	"info": {
+		"description": "Data source plugin for Harper",
+		"author": {
+			"name": "Harper",
+			"url": "https://harpersystems.dev/"
+		},
+		"keywords": ["datasource", "harper", "analytics", "query"],
+		"logos": {
+			"small": "img/logo.svg",
+			"large": "img/logo.svg"
+		},
+		"links": [],
+		"screenshots": [
+			{
+				"path": "img/connection1.png",
+				"name": "Connection configuration"
+			},
+			{
+				"path": "img/dashboard1.png",
+				"name": "Example Harper analytics dashboard"
+			}
+		],
+		"version": "%VERSION%",
+		"updated": "%TODAY%"
+	},
+	"dependencies": {
+		"grafanaDependency": ">=11.6.11 <12 || >=12.0.10 <12.1 || >=12.1.7 <12.2 || >=12.2.5",
+		"plugins": []
+	},
+	"includes": [
+		{
+			"name": "example",
+			"path": "dashboards/example.json",
+			"type": "dashboard"
+		}
+	]
 }
