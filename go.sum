@@ -2,8 +2,8 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/HarperFast/sdk-go v0.0.0-20260206180038-10b7043c9437 h1:ePM64a1ZIoDGxlQWvTMHtFVgg7/jmW6iKAaf/JigXp8=
-github.com/HarperFast/sdk-go v0.0.0-20260206180038-10b7043c9437/go.mod h1:lSnd5E9sPLYyPo49gSckEG1B0JkiiXos3e9/HAQcbJk=
+github.com/HarperFast/sdk-go v0.0.0-20260619224734-776f2fe29f7c h1:G8/krrWHMKKPZ0u2n16XKIC4TmELf2EuALY1giR2Y4I=
+github.com/HarperFast/sdk-go v0.0.0-20260619224734-776f2fe29f7c/go.mod h1:lSnd5E9sPLYyPo49gSckEG1B0JkiiXos3e9/HAQcbJk=
 github.com/andybalholm/brotli v1.2.1 h1:R+f5xP285VArJDRgowrfb9DqL18yVK0gKAW/F+eTWro=
 github.com/andybalholm/brotli v1.2.1/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
 github.com/apache/arrow-go/v18 v18.6.0 h1:GX/Jyd3R7mCLiECAwY9FWbbaYblie2WXBSz4Sw8fNpM=

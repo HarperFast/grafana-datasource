@@ -30,9 +30,10 @@ var (
 )
 
 type Settings struct {
-	OpsAPIURL     string `json:"opsAPIURL"`
-	Username      string `json:"username"`
-	TLSSkipVerify bool   `json:"tlsSkipVerify"`
+	OpsAPIURL                 string `json:"opsAPIURL"`
+	Username                  string `json:"username"`
+	TLSSkipVerify             bool   `json:"tlsSkipVerify"`
+	AggregateClusterAnalytics bool   `json:"aggregateClusterAnalytics"`
 }
 
 func NewDatasource(ctx context.Context, s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -191,6 +192,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			StartTime:     request.From,
 			EndTime:       request.To,
 			CoalesceTime:  true,
+			Replicated:    d.settings.AggregateClusterAnalytics,
 		}
 		if len(conditions) > 0 {
 			req.Conditions = conditions

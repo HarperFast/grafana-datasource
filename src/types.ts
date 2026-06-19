@@ -58,6 +58,7 @@ export interface HarperDataSourceOptions extends DataSourceJsonData {
 	opsAPIURL?: string;
 	username?: string;
 	tlsSkipVerify?: boolean;
+	aggregateClusterAnalytics?: boolean;
 }
 
 /**
