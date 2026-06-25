@@ -1,10 +1,53 @@
 import React, { ChangeEvent } from 'react';
-import { Field, Divider, Input, SecretInput, Switch } from '@grafana/ui';
-import { ConfigSection, DataSourceDescription } from '@grafana/plugin-ui';
+import { css } from '@emotion/css';
+import { Field, Divider, Input, SecretInput, Switch, FieldSet, useTheme2 } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { HarperDataSourceOptions, HarperSecureJsonData } from '../types';
 
 interface Props extends DataSourcePluginOptionsEditorProps<HarperDataSourceOptions, HarperSecureJsonData> {}
+
+// Local replacement for @grafana/plugin-ui's DataSourceDescription, which is an
+// internal-only package not permitted for plugins published to the catalog.
+function DataSourceDescription({
+	dataSourceName,
+	docsLink,
+	hasRequiredFields = true,
+}: {
+	dataSourceName: string;
+	docsLink: string;
+	hasRequiredFields?: boolean;
+}) {
+	const theme = useTheme2();
+	const styles = {
+		container: css({ p: { margin: 0 }, 'p + p': { marginTop: theme.spacing(2) } }),
+		text: css({
+			...theme.typography.body,
+			color: theme.colors.text.secondary,
+			a: {
+				color: theme.colors.text.link,
+				textDecoration: 'underline',
+				'&:hover': { textDecoration: 'none' },
+			},
+		}),
+	};
+	return (
+		<div className={styles.container}>
+			<p className={styles.text}>
+				Before you can use the {dataSourceName} data source, you must configure it below. For detailed
+				instructions,{' '}
+				<a href={docsLink} target="_blank" rel="noreferrer">
+					view the documentation
+				</a>
+				.
+			</p>
+			{hasRequiredFields && (
+				<p className={styles.text}>
+					<i>Fields marked with * are required</i>
+				</p>
+			)}
+		</div>
+	);
+}
 
 export function ConfigEditor(props: Props) {
 	const { onOptionsChange, options } = props;
@@ -65,6 +108,16 @@ export function ConfigEditor(props: Props) {
 		});
 	};
 
+	const onAggregateClusterAnalyticsChange = () => {
+		onOptionsChange({
+			...options,
+			jsonData: {
+				...jsonData,
+				aggregateClusterAnalytics: !jsonData.aggregateClusterAnalytics,
+			},
+		});
+	};
+
 	return (
 		<>
 			<DataSourceDescription
@@ -75,7 +128,7 @@ export function ConfigEditor(props: Props) {
 
 			<Divider />
 
-			<ConfigSection title="Connection">
+			<FieldSet label="Connection">
 				<Field label="Operations API URL" required>
 					<Input
 						id="config-editor-ops-api-url"
@@ -85,11 +138,21 @@ export function ConfigEditor(props: Props) {
 						width={80}
 					/>
 				</Field>
-			</ConfigSection>
+
+				<Field
+					label="Aggregate analytics across cluster nodes"
+					description="Return cluster-wide analytics from this single node by fanning the get_analytics query out to its peers and merging the results (each row is tagged with its origin node). Requires Harper 5.1.13 or later. Leave off to return only this node's analytics, relying on Harper's own analytics replication for cluster-wide data."
+				>
+					<Switch
+						value={!!jsonData.aggregateClusterAnalytics}
+						onChange={onAggregateClusterAnalyticsChange}
+					/>
+				</Field>
+			</FieldSet>
 
 			<Divider />
 
-			<ConfigSection title="Authentication">
+			<FieldSet label="Authentication">
 				<Field label="Username" required>
 					<Input
 						required
@@ -123,7 +186,7 @@ export function ConfigEditor(props: Props) {
 						onChange={onTlsSkipVerifyChange}
 					/>
 				</Field>
-			</ConfigSection>
+			</FieldSet>
 		</>
 	);
 }

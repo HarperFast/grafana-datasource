@@ -30,9 +30,10 @@ var (
 )
 
 type Settings struct {
-	OpsAPIURL     string `json:"opsAPIURL"`
-	Username      string `json:"username"`
-	TLSSkipVerify bool   `json:"tlsSkipVerify"`
+	OpsAPIURL                 string `json:"opsAPIURL"`
+	Username                  string `json:"username"`
+	TLSSkipVerify             bool   `json:"tlsSkipVerify"`
+	AggregateClusterAnalytics bool   `json:"aggregateClusterAnalytics"`
 }
 
 func NewDatasource(ctx context.Context, s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -191,6 +192,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 			StartTime:     request.From,
 			EndTime:       request.To,
 			CoalesceTime:  true,
+			Replicated:    d.settings.AggregateClusterAnalytics,
 		}
 		if len(conditions) > 0 {
 			req.Conditions = conditions
@@ -265,6 +267,31 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 				}
 			}
 			grafanaAnalytics.Rows = append(grafanaAnalytics.Rows, row)
+		}
+
+		// Cluster-wide (replicated) analytics concatenate each node's rows, so the merged set
+		// is no longer globally ordered by time. LongToWide requires ascending time, so sort
+		// the long rows by the time field first. Single-node results are already sorted, so
+		// this is effectively a no-op for them.
+		timeIdx := -1
+		for i, ft := range grafanaAnalytics.FieldTypes {
+			if ft == data.FieldTypeNullableTime {
+				timeIdx = i
+				break
+			}
+		}
+		if timeIdx >= 0 {
+			sort.SliceStable(grafanaAnalytics.Rows, func(a, b int) bool {
+				ta, _ := grafanaAnalytics.Rows[a][timeIdx].(*time.Time)
+				tb, _ := grafanaAnalytics.Rows[b][timeIdx].(*time.Time)
+				if ta == nil {
+					return false
+				}
+				if tb == nil {
+					return true
+				}
+				return ta.Before(*tb)
+			})
 		}
 
 		frame := data.NewFrameOfFieldTypes(

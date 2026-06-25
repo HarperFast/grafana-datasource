@@ -20,14 +20,11 @@ services:
       service: grafana
 
   harper:
-    image: harpersystems/harper:4.7.18
-    build:
-      context: ../harper-main
-      dockerfile: ../harper-main/utility/dev/Dockerfile
+    image: harperfast/harper-pro:5.1.6-node24
     container_name: 'gds-harper'
     user: root
     volumes:
-      - ./hdb:/home/harper/hdb
+      - ./hdb:/home/harperdb/harper
     networks:
       - grafana-harper
     ports:
