@@ -141,7 +141,7 @@ export function ConfigEditor(props: Props) {
 
 				<Field
 					label="Aggregate analytics across cluster nodes"
-					description="Return cluster-wide analytics from this single node by fanning the get_analytics query out to its peers and merging the results (each row is tagged with its origin node). Requires Harper 5.1.0 or later. Leave off to return only this node's analytics, relying on Harper's own analytics replication for cluster-wide data."
+					description="Return cluster-wide analytics from this single node by fanning the get_analytics query out to its peers and merging the results (each row is tagged with its origin node). Requires Harper 5.1.13 or later. Leave off to return only this node's analytics, relying on Harper's own analytics replication for cluster-wide data."
 				>
 					<Switch
 						value={!!jsonData.aggregateClusterAnalytics}
