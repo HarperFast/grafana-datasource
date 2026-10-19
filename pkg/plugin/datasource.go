@@ -8,6 +8,8 @@ import (
 	"maps"
 	"slices"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	harper "github.com/HarperFast/sdk-go"
@@ -131,11 +133,42 @@ type SearchByConditionsQuery struct {
 	Conditions Conditions `json:"conditions"`
 }
 
+// Grafana expands ${__from}/${__to} only in the browser; server-side evaluation (alert and
+// recording rules) delivers them verbatim, so a macro must parse as "unset" rather than fail.
+type timeMillis int64
+
+func (t *timeMillis) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		*t = 0
+		return nil
+	}
+	var n int64
+	if err := json.Unmarshal(b, &n); err == nil {
+		*t = timeMillis(n)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return fmt.Errorf("time value must be a number or string, got %s", string(b))
+	}
+	s = strings.TrimSpace(s)
+	if s == "" || strings.HasPrefix(s, "${__") || strings.HasPrefix(s, "$__") {
+		*t = 0
+		return nil
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return fmt.Errorf("could not parse time value %q as unix milliseconds: %w", s, err)
+	}
+	*t = timeMillis(n)
+	return nil
+}
+
 type GetAnalyticsQuery struct {
 	Metric     string     `json:"metric"`
 	Attributes []string   `json:"attributes"`
-	From       int64      `json:"from"`
-	To         int64      `json:"to"`
+	From       timeMillis `json:"from"`
+	To         timeMillis `json:"to"`
 	Conditions Conditions `json:"conditions"`
 }
 
@@ -177,6 +210,14 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		}
 		request := qm.QueryAttrs
 
+		from, to := int64(request.From), int64(request.To)
+		if from == 0 {
+			from = query.TimeRange.From.UnixMilli()
+		}
+		if to == 0 {
+			to = query.TimeRange.To.UnixMilli()
+		}
+
 		conditions := make(harper.SearchConditions, 0)
 		for _, c := range request.Conditions {
 			conditions = append(conditions, harper.SearchCondition{
@@ -189,8 +230,8 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		req := harper.GetAnalyticsRequest{
 			Metric:        request.Metric,
 			GetAttributes: request.Attributes,
-			StartTime:     request.From,
-			EndTime:       request.To,
+			StartTime:     from,
+			EndTime:       to,
 			CoalesceTime:  true,
 			Replicated:    d.settings.AggregateClusterAnalytics,
 		}
