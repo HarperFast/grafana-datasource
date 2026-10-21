@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -133,9 +134,6 @@ type SearchByConditionsQuery struct {
 	Conditions Conditions `json:"conditions"`
 }
 
-// Grafana expands ${__from}/${__to} only in the browser; server-side evaluation (alert and
-// recording rules) delivers them verbatim, so a macro must parse as its end of the time range
-// rather than fail.
 type timeBound struct {
 	millis int64
 	macro  rangeEnd
@@ -157,28 +155,29 @@ var timeRangeMacros = map[string]rangeEnd{
 }
 
 func (b *timeBound) UnmarshalJSON(raw []byte) error {
-	token := strings.TrimSpace(string(raw))
-	if token == "null" {
+	token := bytes.TrimSpace(raw)
+	if bytes.Equal(token, []byte("null")) {
 		*b = timeBound{}
 		return nil
 	}
-	if strings.HasPrefix(token, `"`) {
-		var s string
-		if err := json.Unmarshal(raw, &s); err != nil {
+	var text string
+	if len(token) > 0 && token[0] == '"' {
+		if err := json.Unmarshal(token, &text); err != nil {
 			return fmt.Errorf("time bound must be a number or string, got %s", token)
 		}
-		s = strings.TrimSpace(s)
-		if s == "" {
+		text = strings.TrimSpace(text)
+		if text == "" {
 			*b = timeBound{}
 			return nil
 		}
-		if end, ok := timeRangeMacros[s]; ok {
+		if end, ok := timeRangeMacros[text]; ok {
 			*b = timeBound{macro: end}
 			return nil
 		}
-		token = s
+	} else {
+		text = string(token)
 	}
-	millis, err := strconv.ParseInt(token, 10, 64)
+	millis, err := strconv.ParseInt(text, 10, 64)
 	if err != nil {
 		return fmt.Errorf("time bound must be whole unix milliseconds, a numeric string, or ${__from}/${__to}, got %s", string(raw))
 	}
