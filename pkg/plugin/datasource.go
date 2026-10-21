@@ -134,41 +134,80 @@ type SearchByConditionsQuery struct {
 }
 
 // Grafana expands ${__from}/${__to} only in the browser; server-side evaluation (alert and
-// recording rules) delivers them verbatim, so a macro must parse as "unset" rather than fail.
-type timeMillis int64
+// recording rules) delivers them verbatim, so a macro must parse as its end of the time range
+// rather than fail.
+type timeBound struct {
+	millis int64
+	macro  rangeEnd
+}
 
-func (t *timeMillis) UnmarshalJSON(b []byte) error {
-	if string(b) == "null" {
-		*t = 0
+type rangeEnd int
+
+const (
+	unsetEnd rangeEnd = iota
+	rangeFrom
+	rangeTo
+)
+
+var timeRangeMacros = map[string]rangeEnd{
+	"${__from}": rangeFrom,
+	"$__from":   rangeFrom,
+	"${__to}":   rangeTo,
+	"$__to":     rangeTo,
+}
+
+func (b *timeBound) UnmarshalJSON(raw []byte) error {
+	token := strings.TrimSpace(string(raw))
+	if token == "null" {
+		*b = timeBound{}
 		return nil
 	}
-	var n int64
-	if err := json.Unmarshal(b, &n); err == nil {
-		*t = timeMillis(n)
-		return nil
+	if strings.HasPrefix(token, `"`) {
+		var s string
+		if err := json.Unmarshal(raw, &s); err != nil {
+			return fmt.Errorf("time bound must be a number or string, got %s", token)
+		}
+		s = strings.TrimSpace(s)
+		if s == "" {
+			*b = timeBound{}
+			return nil
+		}
+		if end, ok := timeRangeMacros[s]; ok {
+			*b = timeBound{macro: end}
+			return nil
+		}
+		token = s
 	}
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return fmt.Errorf("time value must be a number or string, got %s", string(b))
-	}
-	s = strings.TrimSpace(s)
-	if s == "" || strings.HasPrefix(s, "${__") || strings.HasPrefix(s, "$__") {
-		*t = 0
-		return nil
-	}
-	n, err := strconv.ParseInt(s, 10, 64)
+	millis, err := strconv.ParseInt(token, 10, 64)
 	if err != nil {
-		return fmt.Errorf("could not parse time value %q as unix milliseconds: %w", s, err)
+		return fmt.Errorf("time bound must be whole unix milliseconds, a numeric string, or ${__from}/${__to}, got %s", string(raw))
 	}
-	*t = timeMillis(n)
+	if millis <= 0 {
+		return fmt.Errorf("time bound must be a positive unix millisecond timestamp, got %d", millis)
+	}
+	*b = timeBound{millis: millis}
 	return nil
+}
+
+func (b timeBound) resolve(timeRange backend.TimeRange, absent rangeEnd) int64 {
+	if b.millis != 0 {
+		return b.millis
+	}
+	end := b.macro
+	if end == unsetEnd {
+		end = absent
+	}
+	if end == rangeFrom {
+		return timeRange.From.UnixMilli()
+	}
+	return timeRange.To.UnixMilli()
 }
 
 type GetAnalyticsQuery struct {
 	Metric     string     `json:"metric"`
 	Attributes []string   `json:"attributes"`
-	From       timeMillis `json:"from"`
-	To         timeMillis `json:"to"`
+	From       timeBound  `json:"from"`
+	To         timeBound  `json:"to"`
 	Conditions Conditions `json:"conditions"`
 }
 
@@ -210,12 +249,10 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		}
 		request := qm.QueryAttrs
 
-		from, to := int64(request.From), int64(request.To)
-		if from == 0 {
-			from = query.TimeRange.From.UnixMilli()
-		}
-		if to == 0 {
-			to = query.TimeRange.To.UnixMilli()
+		from := request.From.resolve(query.TimeRange, rangeFrom)
+		to := request.To.resolve(query.TimeRange, rangeTo)
+		if from <= 0 || to <= 0 || from > to {
+			return backend.DataResponse{}, fmt.Errorf("get_analytics needs a time range with 0 < from <= to, got from=%d to=%d: '%s'", from, to, query.JSON)
 		}
 
 		conditions := make(harper.SearchConditions, 0)
