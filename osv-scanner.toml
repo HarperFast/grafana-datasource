@@ -1,0 +1,6 @@
+# Read by the Grafana plugin validator's osv-scanner pass only when PLUGIN_VALIDATOR_OSV_CONFIG points here
+# (release.yml does); a plain `osv-scanner` run also picks it up.
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2027-01-31
+reason = "CVE-2026-93687 in braces has no patched release (every version through 3.0.3 is in the vulnerable range). braces reaches this repo only through micromatch in dev tooling (jest, webpack, eslint-webpack-plugin) and is not part of the shipped plugin archive. Drop this entry when a patched braces is published."

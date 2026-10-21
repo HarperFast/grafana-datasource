@@ -5,6 +5,7 @@
 - Fixed `get_analytics` in Grafana-managed alert and recording rules. `from`/`to` now accept whole epoch milliseconds as a number or a numeric string, or the uninterpolated `${__from}`/`${__to}` macros; a bound that is absent or holds a macro takes that end of the query's time range. The plugin therefore no longer sends Harper a request without bounds, which scanned the whole analytics table and timed out.
 - Tightened: a `from`/`to` that is zero, negative, or reversed is now rejected before the request is sent; it previously reached Harper.
 - The query editor no longer writes `${__from}`/`${__to}` into new analytics queries; existing queries keep working.
+- Dependency updates for the release scanner: Grafana plugin SDK 0.297.0, grpc 1.84.0 and golang.org/x/net 0.60.0 in the backend; refreshed npm lockfile with `uuid`, `dompurify` and `moment` pinned past their advisories. `braces` (dev tooling only) has no patched release yet and is documented in `osv-scanner.toml`.
 
 ## 0.2.0
 
