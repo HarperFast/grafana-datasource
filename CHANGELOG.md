@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Fixed `get_analytics` in Grafana-managed alert and recording rules. `from`/`to` now accept whole epoch milliseconds as a number or a numeric string, or the uninterpolated `${__from}`/`${__to}` macros; a bound that is absent or holds a macro takes that end of the query's time range. The plugin therefore no longer sends Harper a request without bounds, which scanned the whole analytics table and timed out.
+- Tightened: a `from`/`to` that is zero, negative, or reversed is now rejected before the request is sent; it previously reached Harper.
+- The query editor no longer writes `${__from}`/`${__to}` into new analytics queries; existing queries keep working.
+
 ## 0.2.0
 
 - Added an **"Aggregate analytics across cluster nodes"** data source setting (off by default). When enabled, the plugin requests cluster-wide analytics from the single node it targets: that node fans the `get_analytics` query out to its peers and merges the results, so one data source shows series for every node (split by the `node` label) even when analytics replication is disabled. **Requires Harper 5.1.13 or later** for cross-node aggregation (5.1.13 fixed `get_analytics` peer fan-out; earlier versions return only the queried node's analytics).

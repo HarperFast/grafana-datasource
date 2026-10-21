@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,8 @@ import (
 	"maps"
 	"slices"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	harper "github.com/HarperFast/sdk-go"
@@ -131,11 +134,79 @@ type SearchByConditionsQuery struct {
 	Conditions Conditions `json:"conditions"`
 }
 
+type timeBound struct {
+	millis int64
+	macro  rangeEnd
+}
+
+type rangeEnd int
+
+const (
+	unsetEnd rangeEnd = iota
+	rangeFrom
+	rangeTo
+)
+
+var timeRangeMacros = map[string]rangeEnd{
+	"${__from}": rangeFrom,
+	"$__from":   rangeFrom,
+	"${__to}":   rangeTo,
+	"$__to":     rangeTo,
+}
+
+func (b *timeBound) UnmarshalJSON(raw []byte) error {
+	token := bytes.TrimSpace(raw)
+	if bytes.Equal(token, []byte("null")) {
+		*b = timeBound{}
+		return nil
+	}
+	var text string
+	if len(token) > 0 && token[0] == '"' {
+		if err := json.Unmarshal(token, &text); err != nil {
+			return fmt.Errorf("time bound must be a number or string, got %s", token)
+		}
+		text = strings.TrimSpace(text)
+		if text == "" {
+			*b = timeBound{}
+			return nil
+		}
+		if end, ok := timeRangeMacros[text]; ok {
+			*b = timeBound{macro: end}
+			return nil
+		}
+	} else {
+		text = string(token)
+	}
+	millis, err := strconv.ParseInt(text, 10, 64)
+	if err != nil {
+		return fmt.Errorf("time bound must be whole unix milliseconds, a numeric string, or ${__from}/${__to}, got %s", string(raw))
+	}
+	if millis <= 0 {
+		return fmt.Errorf("time bound must be a positive unix millisecond timestamp, got %d", millis)
+	}
+	*b = timeBound{millis: millis}
+	return nil
+}
+
+func (b timeBound) resolve(timeRange backend.TimeRange, absent rangeEnd) int64 {
+	if b.millis != 0 {
+		return b.millis
+	}
+	end := b.macro
+	if end == unsetEnd {
+		end = absent
+	}
+	if end == rangeFrom {
+		return timeRange.From.UnixMilli()
+	}
+	return timeRange.To.UnixMilli()
+}
+
 type GetAnalyticsQuery struct {
 	Metric     string     `json:"metric"`
 	Attributes []string   `json:"attributes"`
-	From       int64      `json:"from"`
-	To         int64      `json:"to"`
+	From       timeBound  `json:"from"`
+	To         timeBound  `json:"to"`
 	Conditions Conditions `json:"conditions"`
 }
 
@@ -177,6 +248,12 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		}
 		request := qm.QueryAttrs
 
+		from := request.From.resolve(query.TimeRange, rangeFrom)
+		to := request.To.resolve(query.TimeRange, rangeTo)
+		if from <= 0 || to <= 0 || from > to {
+			return backend.DataResponse{}, fmt.Errorf("get_analytics needs a time range with 0 < from <= to, got from=%d to=%d: '%s'", from, to, query.JSON)
+		}
+
 		conditions := make(harper.SearchConditions, 0)
 		for _, c := range request.Conditions {
 			conditions = append(conditions, harper.SearchCondition{
@@ -189,8 +266,8 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 		req := harper.GetAnalyticsRequest{
 			Metric:        request.Metric,
 			GetAttributes: request.Attributes,
-			StartTime:     request.From,
-			EndTime:       request.To,
+			StartTime:     from,
+			EndTime:       to,
 			CoalesceTime:  true,
 			Replicated:    d.settings.AggregateClusterAnalytics,
 		}

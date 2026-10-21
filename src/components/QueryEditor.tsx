@@ -226,13 +226,6 @@ interface AnalyticsQueryProps {
 function AnalyticsQueryEditor({ queryAttrs, onQueryAttrsChange, datasource }: AnalyticsQueryProps) {
 	const selectedMetric = queryAttrs?.metric;
 
-	if (queryAttrs?.from === undefined) {
-		onQueryAttrsChange({ ...queryAttrs, from: '${__from}' });
-	}
-	if (queryAttrs?.to === undefined) {
-		onQueryAttrsChange({ ...queryAttrs, to: '${__to}' });
-	}
-
 	const loadMetrics = React.useCallback(
 		async (input: string) => {
 			// TODO: Filter metrics based on `input`

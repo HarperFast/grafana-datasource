@@ -34,6 +34,8 @@ It currently provides the following query form(s):
 
 1. `get_analytics`: This Harper operation is useful for monitoring a Harper cluster in Grafana.
 
+The `from` and `to` bounds of a `get_analytics` query are optional. Each accepts whole epoch milliseconds, as a number or a numeric string, or one of Grafana's `${__from}`/`${__to}` macros. A bound that is absent, or holds a macro, takes that end of the query's own time range: the panel's, or an alert or recording rule's relative range. The same query therefore works in dashboards, Explore, and Grafana-managed alert and recording rules. A bound that is zero, negative, or reversed is rejected instead of being sent to Harper.
+
 <!--
 Consider including screenshots:
 - in [plugin.json](https://grafana.com/developers/plugin-tools/reference/plugin-json#info) include them as relative links.
