@@ -1,5 +1,5 @@
-# Read by the Grafana plugin validator's osv-scanner pass only when PLUGIN_VALIDATOR_OSV_CONFIG points here
-# (release.yml does); a plain `osv-scanner` run also picks it up.
+# Honoured by a plain `osv-scanner` run in this directory. The Grafana plugin validator reads it only
+# when PLUGIN_VALIDATOR_OSV_CONFIG points here (validator 0.51+); nothing in this repo sets that today.
 [[IgnoredVulns]]
 id = "GHSA-vfj7-8cjw-p6xm"
 ignoreUntil = 2027-01-31
